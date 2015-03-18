@@ -1,0 +1,27 @@
+.reveal #sec-title-slide h1 {
+    font-size: 3em;
+}
+
+.reveal #sec-title-slide h2 {
+    font-size: 1.5em;
+}
+
+.reveal h2 {
+    font-size: 2.3em;
+}
+
+.reveal section img {
+    border: none;
+    box-shadow: none;
+}
+
+.reveal .org-src-container {
+    width: 87%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.reveal .org-src-container>pre {
+    background: #ffffff;
+    padding: 4px;
+}

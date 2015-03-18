@@ -1,0 +1,201 @@
+#+TITLE:  Nengo's test suite & benchmarking
+#+AUTHOR: Trevor Bekolay
+#+EMAIL:  tbekolay@gmail.com
+
+#+OPTIONS: reveal_control:nil reveal_progress:nil reveal_history:t
+#+OPTIONS: num:nil toc:nil
+#+REVEAL_ROOT: https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/
+#+REVEAL_THEME: serif
+#+REVEAL_TRANS: slide
+#+REVEAL_SPEED: fast
+#+REVEAL_SLIDE_NUMBER: t
+#+REVEAL_EXTRA_CSS: presentation.css
+
+#+BEGIN_NOTES
+  Hello! I'm Trevor, as you all know by now, and today I'm going to
+  go a bit more in-depth into the underlying Nengo library -- not the GUI.
+  Specifically, I'm going to talk Nengo's test suite and how we might
+  use that test suite to do benchmarking of neural software and hardware,
+  especially for neuromorphic hardware like SpiNNaker.
+#+END_NOTES
+* Architecture of Nengo
+#+BEGIN_NOTES
+  In order to talk about Nengo's test suite, I first need to talk a little
+  bit about the architecture of Nengo.
+#+END_NOTES
+[[./img/architecture.svg]]
+* =Simulator= object
+#+BEGIN_SRC python
+  with nengo.Network() as model:
+     ...
+  sim = nengo.Simulator(model)
+  sim.run(2.0)     # Run for 2 seconds
+  sim.run(1.0)     # Run for another second
+  sim.trange()     # [0.001, 0.002, 0.003, ...]
+  sim.data[probe]  # [[0.0, 0.0], [0.02, -0.02], ...]
+#+END_SRC
+* Why?
+[[./img/select_backend.png]]
+* Nengo backends
+
+#+ATTR_REVEAL: :frag (none t t t t t) :frag_idx (0 1 2 3 4 5)
+  - =nengo=
+  - =nengo_ocl=
+  - =nengo_mpi=
+  - =nengo_distilled=
+  - =nengo_brainstorms=
+  - =nengo_spinnaker=
+* Testing Nengo
+#+REVEAL_HTML: <img src="/img/travis-ci.png" width="70%">
+* Testing 101
+#+INCLUDE: "./scripts/test-1.py" src python
+
+#+ATTR_REVEAL: :frag t
+#+INCLUDE: "./scripts/test-1.out" src bash
+* C1: What is 'correct'?
+#+BEGIN_SRC python
+  sim.run(1.0)
+  decoded_value = sim.data[my_probe]
+  assert decoded_value == 1.0
+#+END_SRC
+
+#+ATTR_REVEAL: :frag t
+#+BEGIN_SRC python
+  # Fuzzy testing
+  assert np.allclose(
+      decoded_value[sim.trange() > 0.8], 1.0, atol=0.1)
+#+END_SRC
+* C2: Randomness
+#+BEGIN_SRC python
+  sim1 = nengo.Simulator(model)
+  assert sim1.data[a.encoders] == [[-0.7311976, -0.3121639],
+                                   [ 0.1879579,  0.1909519]]
+  # passes
+#+END_SRC
+
+#+ATTR_REVEAL: :frag t
+#+BEGIN_SRC python
+  sim2 = nengo.Simulator(model)
+  assert sim2.data[a.encoders] == [[-0.7311976, -0.3121639],
+                                   [ 0.1879579,  0.1909519]]
+  # fails
+#+END_SRC
+
+#+ATTR_REVEAL: :frag t
+#+BEGIN_SRC python
+  model.seed = 1
+  sim = nengo.Simulator(model)
+  assert sim.data[a.encoders] == [[-0.7311976, -0.3121639],
+                                  [ 0.1879579,  0.1909519]]
+  # always passes
+#+END_SRC
+* Ex: 1D representation
+#+INCLUDE: "./scripts/test-2.py" src python
+
+#+ATTR_REVEAL: :frag t
+#+INCLUDE: "./scripts/test-2.out" src bash
+* pytest fixtures
+- Explicit, modular, scalable
+
+#+ATTR_REVEAL: :frag t
+#+BEGIN_SRC python
+  import pytest
+
+  @pytest.fixture
+  def my_fixture():
+      return 'This is my fixture'
+
+  def test_something(my_fixture):
+      print(my_fixture)  # prints 'This is my fixture'
+#+END_SRC
+* =Simulator=
+#+INCLUDE: "./scripts/test-3.py" src python
+#+ATTR_REVEAL: :frag t
+#+INCLUDE: "./scripts/test-3.out" src bash
+* =nl=
+#+INCLUDE: "./scripts/test-4.py" src python
+#+ATTR_REVEAL: :frag t
+#+INCLUDE: "./scripts/test-4.out" src bash
+* =seed= / =rng=
+#+INCLUDE: "./scripts/test-5.py" src python
+#+ATTR_REVEAL: :frag t
+#+INCLUDE: "./scripts/test-5.out" src bash
+* Benchmarking is difficult
+Benchmarks are commonly
+
+- biased
+- effortful
+- become out of date quickly
+
+#+ATTR_REVEAL: :frag t
+But benchmarks can drive progress.
+* Testing ≈ benchmarking
+Let's use Nengo's testing infrastructure to benchmark backends
+* =plt=
+#+INCLUDE: "./scripts/test-6.py" src python
+* =plt=
+#+INCLUDE: "./scripts/test-6.out" src bash
+#+ATTR_REVEAL: :frag t
+#+INCLUDE: "./scripts/plots.out" src bash
+* =plt=
+#+REVEAL_HTML: <img src="/img/plt.svg" width="60%">
+* =analytics=
+#+INCLUDE: "./scripts/test-7.py" src python
+* =analytics=
+#+INCLUDE: "./scripts/test-7.out" src bash
+#+ATTR_REVEAL: :frag t
+#+INCLUDE: "./scripts/analytics.out" src bash
+* =logger=
+#+INCLUDE: "./scripts/test-8.py" src python
+* =logger=
+#+INCLUDE: "./scripts/test-8.out" src bash
+#+ATTR_REVEAL: :frag t
+#+INCLUDE: "./scripts/logs.out" src bash
+* =logger=
+#+INCLUDE: "./scripts/nengo.simulator.logs/Direct/test_ensemble.txt" src bash
+#+INCLUDE: "./scripts/nengo.simulator.logs/LIF/test_ensemble.txt" src bash
+* Benchmarks to collect
+1. Compliance
+2. Accuracy
+3. Speed
+* Compliance
+#+REVEAL_HTML: <img src="/img/plots/compliance.svg" width="100%">
+* Accuracy & speed
+1. Chain of 3 communication channels
+2. 2-dimensional product
+3. Controlled oscillator
+4. SPA sequence with memory
+* Accuracy
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/accuracy-1.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/accuracy-2.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/accuracy-3.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/accuracy-4.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/accuracy-5.svg" width="100%">
+* Build speed
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/build-1.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/build-2.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/build-3.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/build-4.svg" width="100%">
+* Run speed
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/run-1.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/run-2.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/run-3.svg" width="100%">
+#+REVEAL: split
+#+REVEAL_HTML: <img src="/img/plots/run-4.svg" width="100%">
+* Conclusion
+- Nengo's test framework provides infrastructure
+  for building useful benchmarks.
+- Take these results with a grain of salt!
+- Benchmarking is difficult.

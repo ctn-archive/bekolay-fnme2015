@@ -1,0 +1,13 @@
+nengo.simulator.logs
+├── Direct
+│   └── test_ensemble.txt
+├── LIF
+│   └── test_ensemble.txt
+├── LIFRate
+│   └── test_ensemble.txt
+├── RectifiedLinear
+│   └── test_ensemble.txt
+└── Sigmoid
+    └── test_ensemble.txt
+
+5 directories, 5 files

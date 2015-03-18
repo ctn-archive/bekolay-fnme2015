@@ -1,0 +1,13 @@
+nengo.simulator.plots
+├── Direct
+│   └── test_ensemble.pdf
+├── LIF
+│   └── test_ensemble.pdf
+├── LIFRate
+│   └── test_ensemble.pdf
+├── RectifiedLinear
+│   └── test_ensemble.pdf
+└── Sigmoid
+    └── test_ensemble.pdf
+
+5 directories, 5 files

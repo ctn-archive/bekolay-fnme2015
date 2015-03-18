@@ -1,0 +1,671 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Nengo's test suite &amp; benchmarking</title>
+<meta name="author" content="(Trevor Bekolay)"/>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/css/reveal.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/css/theme/serif.css" id="theme"/>
+<link rel="stylesheet" href="presentation.css"/>
+<!-- If the query includes 'print-pdf', include the PDF print sheet -->
+<script>
+    if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+    }
+</script>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide">
+<h1>Nengo's test suite &amp; benchmarking</h1>
+<h2>Trevor Bekolay</h2>
+<h2><a href="mailto:tbekolay@gmail.com">tbekolay@gmail.com</a></h2>
+<h2></h2>
+</section>
+<aside class="notes">
+<p>
+Hello! I'm Trevor, as you all know by now, and today I'm going to
+go a bit more in-depth into the underlying Nengo library &#x2013; not the GUI.
+Specifically, I'm going to talk Nengo's test suite and how we might
+use that test suite to do benchmarking of neural software and hardware,
+especially for neuromorphic hardware like SpiNNaker.
+</p>
+
+</aside>
+<section>
+<section id="slide-sec-1">
+<h2 id="sec-1">Architecture of Nengo</h2>
+<aside class="notes">
+<p>
+In order to talk about Nengo's test suite, I first need to talk a little
+bit about the architecture of Nengo.
+</p>
+
+</aside>
+
+<div class="figure">
+<p><img src="./img/architecture.svg" alt="architecture.svg" />
+</p>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-2">
+<h2 id="sec-2"><code>Simulator</code> object</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a020f0;">with</span> nengo.Network() <span style="color: #a020f0;">as</span> model:
+   ...
+<span style="color: #000000; background-color: #ffffff;">sim</span> = nengo.Simulator(model)
+sim.run(<span style="color: #000000; background-color: #ffffff;">2</span>.<span style="color: #000000; background-color: #ffffff;">0</span>)     <span style="color: #b22222;"># Run for 2 seconds</span>
+sim.run(<span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span>)     <span style="color: #b22222;"># Run for another second</span>
+sim.trange()     <span style="color: #b22222;"># [0.001, 0.002, 0.003, ...]</span>
+sim.data[probe]  <span style="color: #b22222;"># [[0.0, 0.0], [0.02, -0.02], ...]</span>
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-3">
+<h2 id="sec-3">Why?</h2>
+
+<div class="figure">
+<p><img src="./img/select_backend.png" alt="select_backend.png" />
+</p>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-4">
+<h2 id="sec-4">Nengo backends</h2>
+<ul>
+<li><code>nengo</code></li>
+<li data-fragment-index="1" class="fragment"><code>nengo_ocl</code></li>
+<li data-fragment-index="2" class="fragment"><code>nengo_mpi</code></li>
+<li data-fragment-index="3" class="fragment"><code>nengo_distilled</code></li>
+<li data-fragment-index="4" class="fragment"><code>nengo_brainstorms</code></li>
+<li data-fragment-index="5" class="fragment"><code>nengo_spinnaker</code></li>
+
+</ul>
+</section>
+</section>
+<section>
+<section id="slide-sec-5">
+<h2 id="sec-5">Testing Nengo</h2>
+<img src="/img/travis-ci.png" width="70%">
+</section>
+</section>
+<section>
+<section id="slide-sec-6">
+<h2 id="sec-6">Testing 101</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a020f0;">import</span> nengo
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">test_ensemble</span>():
+    <span style="color: #a020f0;">with</span> nengo.Network() <span style="color: #a020f0;">as</span> model:
+        <span style="color: #000000; background-color: #ffffff;">ens</span> = nengo.Ensemble(<span style="color: #000000; background-color: #ffffff;">40</span>, <span style="color: #000000; background-color: #ffffff;">dimensions</span>=<span style="color: #000000; background-color: #ffffff;">1</span>)
+    <span style="color: #a020f0;">assert</span> model.ensembles[<span style="color: #000000; background-color: #ffffff;">0</span>] <span style="color: #a020f0;">is</span> ens
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="fragment">.
+1 passed in 0.02 seconds
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-7">
+<h2 id="sec-7">C1: What is 'correct'?</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python">sim.run(<span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span>)
+<span style="color: #000000; background-color: #ffffff;">decoded_value</span> = sim.data[my_probe]
+<span style="color: #a020f0;">assert</span> <span style="color: #000000; background-color: #ffffff;">decoded_value</span> == <span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span>
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="fragment"><span style="color: #b22222;"># </span><span style="color: #b22222;">Fuzzy testing</span>
+<span style="color: #a020f0;">assert</span> np.allclose(
+    decoded_value[sim.trange() &gt; <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">8</span>], <span style="color: #000000; background-color: #ffffff;">1</span>.<span style="color: #000000; background-color: #ffffff;">0</span>, <span style="color: #000000; background-color: #ffffff;">atol</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1</span>)
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-8">
+<h2 id="sec-8">C2: Randomness</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #000000; background-color: #ffffff;">sim1</span> = nengo.Simulator(model)
+<span style="color: #a020f0;">assert</span> <span style="color: #000000; background-color: #ffffff;">sim1.data</span>[a.encoders] == [[-<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">7311976</span>, -<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">3121639</span>],
+                                 [ <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1879579</span>,  <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1909519</span>]]
+<span style="color: #b22222;"># </span><span style="color: #b22222;">passes</span>
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="fragment"><span style="color: #000000; background-color: #ffffff;">sim2</span> = nengo.Simulator(model)
+<span style="color: #a020f0;">assert</span> <span style="color: #000000; background-color: #ffffff;">sim2.data</span>[a.encoders] == [[-<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">7311976</span>, -<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">3121639</span>],
+                                 [ <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1879579</span>,  <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1909519</span>]]
+<span style="color: #b22222;"># </span><span style="color: #b22222;">fails</span>
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="fragment"><span style="color: #000000; background-color: #ffffff;">model.seed</span> = <span style="color: #000000; background-color: #ffffff;">1</span>
+<span style="color: #000000; background-color: #ffffff;">sim</span> = nengo.Simulator(model)
+<span style="color: #a020f0;">assert</span> <span style="color: #000000; background-color: #ffffff;">sim.data</span>[a.encoders] == [[-<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">7311976</span>, -<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">3121639</span>],
+                                [ <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1879579</span>,  <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1909519</span>]]
+<span style="color: #b22222;"># </span><span style="color: #b22222;">always passes</span>
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-9">
+<h2 id="sec-9">Ex: 1D representation</h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a020f0;">import</span> nengo; <span style="color: #a020f0;">import</span> numpy <span style="color: #a020f0;">as</span> np
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">test_ensemble</span>():
+    <span style="color: #a020f0;">with</span> nengo.Network(<span style="color: #000000; background-color: #ffffff;">seed</span>=<span style="color: #000000; background-color: #ffffff;">1</span>) <span style="color: #a020f0;">as</span> model:
+        <span style="color: #000000; background-color: #ffffff;">stim</span> = nengo.Node([<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>])
+        <span style="color: #000000; background-color: #ffffff;">ens</span> = nengo.Ensemble(<span style="color: #000000; background-color: #ffffff;">40</span>, <span style="color: #000000; background-color: #ffffff;">dimensions</span>=<span style="color: #000000; background-color: #ffffff;">1</span>)
+        nengo.Connection(stim, ens)
+        <span style="color: #000000; background-color: #ffffff;">probe</span> = nengo.Probe(ens, <span style="color: #000000; background-color: #ffffff;">synapse</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">05</span>)
+    <span style="color: #000000; background-color: #ffffff;">sim</span> = nengo.Simulator(model)
+    sim.run(<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>)
+    <span style="color: #a020f0;">assert</span> np.allclose(
+        sim.data[probe][sim.trange() &gt; <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">4</span>], <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">atol</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1</span>)
+</pre>
+</div>
+
+<div class="org-src-container">
+
+<pre  class="fragment">.
+1 passed in 0.19 seconds
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-10">
+<h2 id="sec-10">pytest fixtures</h2>
+<ul>
+<li>Explicit, modular, scalable</li>
+
+</ul>
+
+<div class="org-src-container">
+
+<pre  class="fragment"><span style="color: #a020f0;">import</span> pytest
+
+<span style="color: #a020f0;">@pytest.fixture</span>
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">my_fixture</span>():
+    <span style="color: #a020f0;">return</span> <span style="color: #8b2252;">'This is my fixture'</span>
+
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">test_something</span>(my_fixture):
+    <span style="color: #a020f0;">print</span>(my_fixture)  <span style="color: #b22222;"># prints 'This is my fixture'</span>
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-11">
+<h2 id="sec-11"><code>Simulator</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a020f0;">import</span> nengo; <span style="color: #a020f0;">import</span> numpy <span style="color: #a020f0;">as</span> np
+<span style="color: #a020f0;">from</span> nengo.tests.conftest <span style="color: #a020f0;">import</span> Simulator
+
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">test_ensemble</span>(Simulator):
+    <span style="color: #a020f0;">with</span> nengo.Network(<span style="color: #000000; background-color: #ffffff;">seed</span>=<span style="color: #000000; background-color: #ffffff;">1</span>) <span style="color: #a020f0;">as</span> model:
+        <span style="color: #000000; background-color: #ffffff;">stim</span> = nengo.Node([<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>])
+        <span style="color: #000000; background-color: #ffffff;">ens</span> = nengo.Ensemble(<span style="color: #000000; background-color: #ffffff;">40</span>, <span style="color: #000000; background-color: #ffffff;">dimensions</span>=<span style="color: #000000; background-color: #ffffff;">1</span>)
+        nengo.Connection(stim, ens)
+        <span style="color: #000000; background-color: #ffffff;">probe</span> = nengo.Probe(ens, <span style="color: #000000; background-color: #ffffff;">synapse</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">05</span>)
+    <span style="color: #000000; background-color: #ffffff;">sim</span> = Simulator(model)
+    sim.run(<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>)
+    <span style="color: #a020f0;">assert</span> np.allclose(
+        sim.data[probe][sim.trange() &gt; <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">4</span>], <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">atol</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1</span>)
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre  class="fragment">.
+1 passed in 0.18 seconds
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-12">
+<h2 id="sec-12"><code>nl</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a020f0;">import</span> nengo; <span style="color: #a020f0;">import</span> numpy <span style="color: #a020f0;">as</span> np
+<span style="color: #a020f0;">from</span> nengo.tests.conftest <span style="color: #a020f0;">import</span> Simulator
+<span style="color: #a020f0;">from</span> nengo.tests.conftest <span style="color: #a020f0;">import</span> pytest_generate_tests
+
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">test_ensemble</span>(Simulator, nl):
+    <span style="color: #a020f0;">with</span> nengo.Network(<span style="color: #000000; background-color: #ffffff;">seed</span>=<span style="color: #000000; background-color: #ffffff;">1</span>) <span style="color: #a020f0;">as</span> model:
+        model.config[nengo.Ensemble]<span style="color: #000000; background-color: #ffffff;">.neuron_type</span> = nl()
+        <span style="color: #000000; background-color: #ffffff;">stim</span> = nengo.Node([<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>])
+        <span style="color: #000000; background-color: #ffffff;">ens</span> = nengo.Ensemble(<span style="color: #000000; background-color: #ffffff;">40</span>, <span style="color: #000000; background-color: #ffffff;">dimensions</span>=<span style="color: #000000; background-color: #ffffff;">1</span>)
+        nengo.Connection(stim, ens)
+        <span style="color: #000000; background-color: #ffffff;">probe</span> = nengo.Probe(ens, <span style="color: #000000; background-color: #ffffff;">synapse</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">05</span>)
+    <span style="color: #000000; background-color: #ffffff;">sim</span> = Simulator(model)
+    sim.run(<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>)
+    <span style="color: #a020f0;">assert</span> np.allclose(
+        sim.data[probe][sim.trange() &gt; <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">4</span>], <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">atol</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1</span>)
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre  class="fragment">.....
+5 passed in 0.71 seconds
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-13">
+<h2 id="sec-13"><code>seed</code> / <code>rng</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a020f0;">import</span> nengo; <span style="color: #a020f0;">import</span> numpy <span style="color: #a020f0;">as</span> np
+<span style="color: #a020f0;">from</span> nengo.tests.conftest <span style="color: #a020f0;">import</span> Simulator, seed
+<span style="color: #a020f0;">from</span> nengo.tests.conftest <span style="color: #a020f0;">import</span> pytest_generate_tests
+
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">test_ensemble</span>(Simulator, nl, seed):
+    <span style="color: #a020f0;">with</span> nengo.Network(<span style="color: #000000; background-color: #ffffff;">seed</span>=seed) <span style="color: #a020f0;">as</span> model:
+        model.config[nengo.Ensemble]<span style="color: #000000; background-color: #ffffff;">.neuron_type</span> = nl()
+        <span style="color: #000000; background-color: #ffffff;">stim</span> = nengo.Node([<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>])
+        <span style="color: #000000; background-color: #ffffff;">ens</span> = nengo.Ensemble(<span style="color: #000000; background-color: #ffffff;">40</span>, <span style="color: #000000; background-color: #ffffff;">dimensions</span>=<span style="color: #000000; background-color: #ffffff;">1</span>)
+        nengo.Connection(stim, ens)
+        <span style="color: #000000; background-color: #ffffff;">probe</span> = nengo.Probe(ens, <span style="color: #000000; background-color: #ffffff;">synapse</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">05</span>)
+    <span style="color: #000000; background-color: #ffffff;">sim</span> = Simulator(model)
+    sim.run(<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>)
+    <span style="color: #a020f0;">assert</span> np.allclose(
+        sim.data[probe][sim.trange() &gt; <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">4</span>], <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">atol</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1</span>)
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre  class="fragment">.....
+5 passed in 0.72 seconds
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-14">
+<h2 id="sec-14">Benchmarking is difficult</h2>
+<p>
+Benchmarks are commonly
+</p>
+
+<ul>
+<li>biased</li>
+<li>effortful</li>
+<li>become out of date quickly</li>
+
+</ul>
+
+<span class="fragment"><p>
+But benchmarks can drive progress.
+</p></span>
+</section>
+</section>
+<section>
+<section id="slide-sec-15">
+<h2 id="sec-15">Testing ≈ benchmarking</h2>
+<p>
+Let's use Nengo's testing infrastructure to benchmark backends
+</p>
+</section>
+</section>
+<section>
+<section id="slide-sec-16">
+<h2 id="sec-16"><code>plt</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a020f0;">import</span> nengo; <span style="color: #a020f0;">import</span> numpy <span style="color: #a020f0;">as</span> np
+<span style="color: #a020f0;">from</span> nengo.tests.conftest <span style="color: #a020f0;">import</span> Simulator, plt, seed
+<span style="color: #a020f0;">from</span> nengo.tests.conftest <span style="color: #a020f0;">import</span> pytest_generate_tests
+
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">test_ensemble</span>(Simulator, nl, seed, plt):
+    <span style="color: #a020f0;">with</span> nengo.Network(<span style="color: #000000; background-color: #ffffff;">seed</span>=seed) <span style="color: #a020f0;">as</span> model:
+        model.config[nengo.Ensemble]<span style="color: #000000; background-color: #ffffff;">.neuron_type</span> = nl()
+        <span style="color: #000000; background-color: #ffffff;">stim</span> = nengo.Node([<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>])
+        <span style="color: #000000; background-color: #ffffff;">ens</span> = nengo.Ensemble(<span style="color: #000000; background-color: #ffffff;">40</span>, <span style="color: #000000; background-color: #ffffff;">dimensions</span>=<span style="color: #000000; background-color: #ffffff;">1</span>)
+        nengo.Connection(stim, ens)
+        <span style="color: #000000; background-color: #ffffff;">probe</span> = nengo.Probe(ens, <span style="color: #000000; background-color: #ffffff;">synapse</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">05</span>)
+    <span style="color: #000000; background-color: #ffffff;">sim</span> = Simulator(model)
+    sim.run(<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>)
+
+    plt.plot(sim.trange(), sim.data[probe])
+
+    <span style="color: #a020f0;">assert</span> np.allclose(
+        sim.data[probe][sim.trange() &gt; <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">4</span>], <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">atol</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1</span>)
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-17">
+<h2 id="sec-17"><code>plt</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-bash">.....
+5 passed in 1.89 seconds
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre  class="fragment">nengo.simulator.plots
+├── Direct
+│   └── test_ensemble.pdf
+├── LIF
+│   └── test_ensemble.pdf
+├── LIFRate
+│   └── test_ensemble.pdf
+├── RectifiedLinear
+│   └── test_ensemble.pdf
+└── Sigmoid
+    └── test_ensemble.pdf
+
+5 directories, 5 files
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-18">
+<h2 id="sec-18"><code>plt</code></h2>
+<img src="/img/plt.svg" width="60%">
+</section>
+</section>
+<section>
+<section id="slide-sec-19">
+<h2 id="sec-19"><code>analytics</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a020f0;">import</span> nengo; <span style="color: #a020f0;">import</span> numpy <span style="color: #a020f0;">as</span> np
+<span style="color: #a020f0;">from</span> nengo.tests.conftest <span style="color: #a020f0;">import</span> (Simulator, analytics, plt,
+    seed, pytest_generate_tests)
+
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">test_ensemble</span>(Simulator, nl, seed, analytics, plt):
+    <span style="color: #a020f0;">with</span> nengo.Network(<span style="color: #000000; background-color: #ffffff;">seed</span>=seed) <span style="color: #a020f0;">as</span> model:
+        model.config[nengo.Ensemble]<span style="color: #000000; background-color: #ffffff;">.neuron_type</span> = nl()
+        <span style="color: #000000; background-color: #ffffff;">stim</span> = nengo.Node([<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>])
+        <span style="color: #000000; background-color: #ffffff;">ens</span> = nengo.Ensemble(<span style="color: #000000; background-color: #ffffff;">40</span>, <span style="color: #000000; background-color: #ffffff;">dimensions</span>=<span style="color: #000000; background-color: #ffffff;">1</span>)
+        nengo.Connection(stim, ens)
+        <span style="color: #000000; background-color: #ffffff;">probe</span> = nengo.Probe(ens, <span style="color: #000000; background-color: #ffffff;">synapse</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">05</span>)
+    <span style="color: #000000; background-color: #ffffff;">sim</span> = Simulator(model)
+    sim.run(<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>)
+
+    plt.plot(sim.trange(), sim.data[probe])
+    analytics.add_data(<span style="color: #8b2252;">'out'</span>, sim.data[probe], <span style="color: #8b2252;">"decoded out"</span>)
+
+    <span style="color: #a020f0;">assert</span> np.allclose(
+        sim.data[probe][sim.trange() &gt; <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">4</span>], <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">atol</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1</span>)
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-20">
+<h2 id="sec-20"><code>analytics</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-bash">.....
+5 passed in 1.80 seconds
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre  class="fragment">nengo.simulator.analytics
+├── Direct
+│   └── test_ensemble.npz
+├── LIF
+│   └── test_ensemble.npz
+├── LIFRate
+│   └── test_ensemble.npz
+├── RectifiedLinear
+│   └── test_ensemble.npz
+└── Sigmoid
+    └── test_ensemble.npz
+
+5 directories, 5 files
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-21">
+<h2 id="sec-21"><code>logger</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-python"><span style="color: #a020f0;">import</span> nengo; <span style="color: #a020f0;">import</span> numpy <span style="color: #a020f0;">as</span> np
+<span style="color: #a020f0;">from</span> nengo.tests.conftest <span style="color: #a020f0;">import</span> (Simulator, analytics, plt,
+    logger, seed, pytest_generate_tests)
+
+<span style="color: #a020f0;">def</span> <span style="color: #0000ff;">test_ensemble</span>(Simulator, nl, seed, analytics, logger, plt):
+    <span style="color: #a020f0;">with</span> nengo.Network(<span style="color: #000000; background-color: #ffffff;">seed</span>=seed) <span style="color: #a020f0;">as</span> model:
+        model.config[nengo.Ensemble]<span style="color: #000000; background-color: #ffffff;">.neuron_type</span> = nl()
+        <span style="color: #000000; background-color: #ffffff;">stim</span> = nengo.Node([<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>])
+        <span style="color: #000000; background-color: #ffffff;">ens</span> = nengo.Ensemble(<span style="color: #000000; background-color: #ffffff;">40</span>, <span style="color: #000000; background-color: #ffffff;">dimensions</span>=<span style="color: #000000; background-color: #ffffff;">1</span>)
+        nengo.Connection(stim, ens)
+        <span style="color: #000000; background-color: #ffffff;">probe</span> = nengo.Probe(ens, <span style="color: #000000; background-color: #ffffff;">synapse</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">05</span>)
+    <span style="color: #000000; background-color: #ffffff;">sim</span> = Simulator(model)
+    sim.run(<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>)
+
+    plt.plot(sim.trange(), sim.data[probe])
+    analytics.add_data(<span style="color: #8b2252;">'out'</span>, sim.data[probe], <span style="color: #8b2252;">"decoded out"</span>)
+    logger.info(<span style="color: #8b2252;">'RMSE=%f'</span>, nengo.utils.numpy.rmse(
+        sim.data[probe][sim.trange() &gt; <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">4</span>], <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>))
+
+    <span style="color: #a020f0;">assert</span> np.allclose(
+        sim.data[probe][sim.trange() &gt; <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">4</span>], <span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">5</span>, <span style="color: #000000; background-color: #ffffff;">atol</span>=<span style="color: #000000; background-color: #ffffff;">0</span>.<span style="color: #000000; background-color: #ffffff;">1</span>)
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-22">
+<h2 id="sec-22"><code>logger</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-bash">.....
+5 passed in 1.86 seconds
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre  class="fragment">nengo.simulator.logs
+├── Direct
+│   └── test_ensemble.txt
+├── LIF
+│   └── test_ensemble.txt
+├── LIFRate
+│   └── test_ensemble.txt
+├── RectifiedLinear
+│   └── test_ensemble.txt
+└── Sigmoid
+    └── test_ensemble.txt
+
+5 directories, 5 files
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-23">
+<h2 id="sec-23"><code>logger</code></h2>
+<div class="org-src-container">
+
+<pre  class="src src-bash">[INFO] === Test run at 2015-06-15 13:44:12 ===
+[INFO] RMSE=0.000094
+</pre>
+</div>
+<div class="org-src-container">
+
+<pre  class="src src-bash">[INFO] === Test run at 2015-06-15 13:44:12 ===
+[INFO] Cache hit [557ba1f3a5c815f201a71c859e8b41376f2a9885]: Loaded stored decoders.
+[INFO] RMSE=0.004409
+</pre>
+</div>
+</section>
+</section>
+<section>
+<section id="slide-sec-24">
+<h2 id="sec-24">Benchmarks to collect</h2>
+<ol>
+<li>Compliance</li>
+<li>Accuracy</li>
+<li>Speed</li>
+
+</ol>
+</section>
+</section>
+<section>
+<section id="slide-sec-25">
+<h2 id="sec-25">Compliance</h2>
+<img src="/img/plots/compliance.svg" width="100%">
+</section>
+</section>
+<section>
+<section id="slide-sec-26">
+<h2 id="sec-26">Accuracy &amp; speed</h2>
+<ol>
+<li>Chain of 3 communication channels</li>
+<li>2-dimensional product</li>
+<li>Controlled oscillator</li>
+<li>SPA sequence with memory</li>
+
+</ol>
+</section>
+</section>
+<section>
+<section id="slide-sec-27">
+<h2 id="sec-27">Accuracy</h2>
+</section>
+<section>
+<img src="/img/plots/accuracy-1.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/accuracy-2.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/accuracy-3.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/accuracy-4.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/accuracy-5.svg" width="100%">
+</section>
+</section>
+<section>
+<section id="slide-sec-28">
+<h2 id="sec-28">Build speed</h2>
+</section>
+<section>
+<img src="/img/plots/build-1.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/build-2.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/build-3.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/build-4.svg" width="100%">
+</section>
+</section>
+<section>
+<section id="slide-sec-29">
+<h2 id="sec-29">Run speed</h2>
+</section>
+<section>
+<img src="/img/plots/run-1.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/run-2.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/run-3.svg" width="100%">
+</section>
+<section>
+<img src="/img/plots/run-4.svg" width="100%">
+</section>
+</section>
+<section>
+<section id="slide-sec-30">
+<h2 id="sec-30">Conclusion</h2>
+<ul>
+<li>Nengo's test framework provides infrastructure
+for building useful benchmarks.</li>
+<li>Take these results with a grain of salt!</li>
+<li>Benchmarking is difficult.</li>
+
+</ul>
+</section>
+</section>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/lib/js/head.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/js/reveal.js"></script>
+
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: false,
+progress: false,
+history: true,
+center: true,
+slideNumber: true,
+rollingLinks: false,
+keyboard: true,
+overview: true,
+
+theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+transition: Reveal.getQueryHash().transition || 'slide', // default/cube/page/concave/zoom/linear/fade/none
+transitionSpeed: 'fast',
+multiplex: {
+    secret: '', // null if client
+    id: '', // id, obtained from socket.io server
+    url: '' // Location of socket.io server
+},
+
+// Optional libraries used to extend on reveal.js
+dependencies: [
+ { src: 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+ { src: 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+ { src: 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+ { src: 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+ { src: 'https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.1.0/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+]
+});
+</script>
+</body>
+</html>
