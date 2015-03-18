@@ -1,0 +1,72 @@
+* Title
+- Benchmarking neuromorphic systems with Nengo
+* Authors
+Trevor Bekolay
+Terrence C. Stewart
+Jan Gosmann ?
+Eric Hunsberger ?
+Andrew Mundy ?
+Chris Eliasmith
+* Introduction
+- Nengo's purpose is to make *functional* brain models out of
+  biologically inspired neural parts -- usually spiking neurons,
+  but could also be rate-based models
+- We test that Nengo can replicate high-level function
+  with different biologically inspired parts.
+  Like normal unit testing, but kind of fuzzy (with tolerances)
+- Useful analogy: neural compiler. Nengo specifies a model at
+  a higher level, and is compiled down to lower-level parts.
+- Nengo is architected such that the same model can be run on
+  neural parts implemented on different platforms,
+  including neuromorphic hardware
+- Hypothesis: Nengo's test suite provides a set of
+  models that can test the speed and accuracy of
+  neuromorphic systems
+* Background
+** Nengo architecture
+- Frontend / backend decoupling
+- Requirements for building a backend
+** Fuzzy testing
+- Not like testing most software; can't really use strict equality
+- Implemented test fixtures to help
+  - =Simulator= to switch backend
+  - =plt= for saving plots
+  - =analytics= for saving data
+  - =logger= for saving text
+* Methods
+** Metrics
+*** Compliance
+- How many tests each backend passes
+  - Nengo has X tests, Y of which use =Simulator=
+*** Accuracy
+- How well it does on certain tests
+  - Talk about each accuracy test -- consider stealing some from
+    https://github.com/ctn-waterloo/nef-chip-hardware/tree/master/benchmarks
+*** Speed
+- How fast certain tests run (build vs. simulation)
+** Backends
+*** Reference (=nengo=)
+*** NengoOCL
+*** Simplified reference (=ctn-waterloo/nengo_reference=)
+*** SpiNNaker hardware
+*** Neurogrid hardware simulation
+* Results and discussion
+** Compliance
+Table 1: How many tests pass for each backend
+** Accuracy
+Figure 1: Example output from a few backends (=plt= figure)
+Figures 2 - 4: Results of each accuracy test (=analytics= / =logger= figure)
+** Speed
+Figure 5: Speed of entire test suite (normalized to the tests run)
+Figure 6: Speed of build vs. sim (for a subset of tests)
+* Conclusions
+- Nengo's goal is to make functional models
+- For neuromorphic hardware that shares this goal,
+  writing a Nengo backend makes it possible to run
+  all these models
+- Also gives access to these tests, which could become a good
+  standard set of metrics by which to test things
+- These were just the tests implemented in Nengo now.
+  Nengo will continue to develop new models and tests
+  for our own purposes, which neuromorphic backends
+  will get for free
