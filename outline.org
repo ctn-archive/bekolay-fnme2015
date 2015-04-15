@@ -29,6 +29,7 @@ Chris Eliasmith
 ** Fuzzy testing
 - Not like testing most software; can't really use strict equality
 - Implemented test fixtures to help
+  - =rng= / =seed= to manage RNG
   - =Simulator= to switch backend, =nl= / =nl_nodirect= to switch neuron type
   - =plt= for saving plots
   - =analytics= for saving data
