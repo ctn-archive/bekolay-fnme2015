@@ -49,7 +49,21 @@
 
 \section{Introduction}
 
-Benchmarking is a notoriously difficult task...
+Benchmarking is a notoriously difficult task.
+Benchmarks are often created by
+the creators of the tools being benchmarked,
+resulting in biased comparisons favoring their tool.
+Benchmarking can be an inefficient process,
+as the tool being benchmarked
+may need changes to collect
+certain performance metrics.
+Even once that effort is undertaken,
+benchmarks often are run a few times
+and then forgotten,
+quickly becoming obsolete.
+We propose that the Nengo test suite
+can serve as an unbiased, efficient, and future-proof
+set of benchmarks for neuromorphic systems.
 
 Nengo is a rigorously tested software package
 for building and simulating
@@ -69,6 +83,28 @@ between different neuromorphic implementations
 that are geared toward (???) functional performance,
 rather than artificial metrics
 that may or may not contribute to functional performance.
+
+The end result is a set of benchmarks that
+are written once but run on all backends,
+making new benchmarks easy to implement.
+Nengo's primary goal is to
+build large-scale functional models,
+and contains tests of functional performance;
+it is therefore not intentionally
+biased in favor of any particular backend.
+While there is effort involved in creating
+a Nengo backend for a particular neuromorphic system,
+the reason to build such a backend
+is to leverage the large-scale modelling interface
+provided by Nengo;
+the ability to collect benchmarks
+is provided essentially for free.
+Finally, since the test suite exists
+to ensure that Nengo continues to function
+correctly, and is run frequently using
+continuous integration systems,
+it will continue to grow and be run frequently,
+rather than becoming obsolete in the future.
 
 Other software that do similar things:
 many neural simulators exist, and have tests,
@@ -128,23 +164,186 @@ or other inter-process communication protocols.
 
 \subsubsection{Frontend interface}
 
-Go over the nengo objects
+Nengo contains five frontend objects
+that validate and store symbolic information
+about the neural model that will be simulated.
+A lot of reasoning can be done at this symbolic level,
+which takes significant burdens off of each backend.
 
-Unlike other programming models,
-it's not like... for sure.
-Go over symbolic dists.
+The primary abstraction in Nengo is the \textit{Ensemble},
+which is a group of neurons (or neuron-like functions)
+that collectively represent a time-varying vector of numbers.
+Two parameters are mandatory: the number of neurons,
+and the dimensionality of the vector being represented.
+There are several optional parameters that
+affect how the neurons represent the vector space;
+encoders map the vector space into currents
+to be injected in the neurons,
+maximum firing rates can be specified for each neuron,
+the type of neuron model can be specified,
+and so on.
 
-Some things are suggestions.
-Go over backend hints.
+The \textit{Node} plays a similar role of representing
+time-varying vectors of numbers,
+but does so directly, without simulating a group of neurons.
+As such, the only mandatory parameter
+is what vector should be represented;
+this can be specified as a constant vector,
+or as a function of time.
+
+The \textit{Connection} connects two objects
+(e.g., \textit{Ensembles} or \textit{Nodes}) together.
+The two objects being connected are the only mandatory parameters;
+the synapse model filtering the connection
+and a function applied to the vector
+communicated across the connection
+can optionally be specified.
+
+The \textit{Probe} denotes that a particular
+quantity in the simulation should be recorded
+at a particular rate.
+The object to be probed must be specified;
+the attribute of that object,
+a sampling rate, and a synapse model for filtering
+can optionally be specified.
+
+An important distinction between typical
+parameters and those specified in Nengo
+is that many are stochastic,
+and not necessarily guaranteed
+to be supported by every backend.
+The vast majority of numeric parameters,
+for example,
+are most often specified as probability distributions;
+an ensemble's maximum firing rate defaults to
+a uniform distribution between 200 and 400 Hz,
+but this could be set to a Gaussian distribution
+or a discrete set of options and associated
+probabilities.
+Other parameters,
+most notably an ensemble's neuron model,
+may not be supported by a particular backend,
+which may raise an error.
+Even if a particular neuron model is supported,
+it may be implemented differently by each backend;
+Nengo does its best to approximate
+the high-level specification regardless of
+the neuron model that is actually used.
+
+Finally, the \textit{Network} is a
+container for the other four objects.
+The only parameter on the network
+is an optional integer seed;
+setting this should make
+all of the random factors
+in the model deterministic.
+Aside from managing the random seed,
+the network is responsible for maintaining
+a network-specific set of default parameters
+for the four other objects.
+This results in much shorter and less error-prone
+model creation scripts.
+
+An example script showing how Nengo can
+express a functional network
+with ??? neurons and ??? connections
+(representing ??? connection weights)
+in ??? lines of code can be seen
+in Figure~\ref{???}.
 
 \subsubsection{Backend requirements}
 
-Go over the Simulator object, and required methods.
+The role of the backend is to take
+a single network, which contains
+ensembles, nodes, connections, and probes,
+and construct the underlying objects necessary
+to implement the model specified by that network.
+That implementation is exposed to Python
+through a \textit{Simulator} object,
+which has three required methods
+and one required attribute.
 
-Go over (briefly) translation of frontend to backend.
-Needed: some kind of neuron model; takes current,
-produces output (rates, spikes, whatever).
-Needed: Ops (look at all ops)
+The first method is \texttt{\_\_init\_\_},
+which is a special Python method for initializing objects.
+This method must accept a network as its first argument.
+It can then accept optional arguments depending on
+the capabilities and requirements of the backend;
+the reference backend, for example,
+accepts \texttt{dt},
+which is the length of each timestep.
+The purpose of \texttt{\_\_init\_\_} is to
+set up the low-level system
+that implements the high-level objects
+contained in the provided network.
+When parts of the model must be
+randomly sampled, the random factors
+should be identical when a network
+In the reference backend,
+this involves sampling from the distributions
+in all of the parameters of all objects,
+solving for decoding weights and connection weights,
+setting up data structures for probed data,
+and so on.
+
+The second method is \texttt{run},
+which advances the simulation
+by the number of seconds
+passed in as a required argument.
+Whatever low-level structure was created
+in \texttt{\_\_init\_\_} advances forward
+for that many real or simulated seconds,
+and importantly, any probed data is sampled
+according to its sample rate.
+In the reference backend,
+this advances the simulation
+by \texttt{time / dt} timesteps,
+where \texttt{dt} is fixed at the start of the simulation
+and cannot change;
+other backends may have variable-length timesteps,
+or may not explicitly track timesteps.
+
+The third method is \texttt{trange},
+which returns a sequence of times that correspond
+to the times at which data was probed.
+In the reference backend, this will be
+a straightforward sequence of increasing
+multiples of \texttt{dt};
+other backends may simulate at variable rates.
+
+Finally, the simulator object exposed by each backend
+must have an attribute called \texttt{data},
+which exposes a dictionary-like interface
+to the data being probed over the course
+of the simulation.
+The data dictionary should,
+at a minimum, provide a mapping from
+probe instances to the probed data;
+in other words, probe instances are keys
+and the probed data are values.
+
+These three methods and one attribute
+make up the public interface
+that Nengo tests expect from backends;
+it is an example
+of the adapter pattern \cite{???}. % Maybe lose?
+While the existence of the methods
+and attribute are necessary
+for every Nengo model,
+they are not sufficient;
+backends are not required
+to implement all of the neuron models
+or advanced features that
+are available in all other backends.
+Backends are responsible for informing
+the user when model cannot be implemented
+on that backend.
+The compliance metric (see section ???)
+explicitly tracks the details of what
+types of models can be implemented
+by each backend.
+The details of how each backend
+implements high-level frontend model
+are out of the scope of this paper.
 
 \subsection{Fuzzy testing}
 
@@ -152,8 +351,11 @@ As of version 2.0.1, Nengo's test suite contains 618 tests.
 Some test are unit tests though; how many?
 In all, ??? can be considered ``functional'' tests,
 as they construct a model,
-build a simulator object (see previous sec???)
+build a simulator object (see previous sec???),
+run that object,
 and test that the output of that model
+(as exposed through \texttt{trange}
+and \texttt{data})
 matches the desired output,
 to a certain tolerance.
 
@@ -186,43 +388,135 @@ completely objective benchmarks.
 
 Nengo's test suite employs the \texttt{pytest}
 testing framework \cite{???}.
-??? introduce test fixtures
+\texttt{pytest} enables
+expressive testing of pluggable components
+(such as backends)
+through what are called ``test fixtures.''
+Fixtures are exposed to the test suite
+as arguments that can be provided
+to any test function.
+\texttt{pytest} inspects the function signature,
+and passes an appropriate value
+to the function.
+This allows for boilerplate code
+to be specified once,
+and run for any test that might use it.
+The example script in Figure~\ref{???}
+demonstrates how these fixtures
+look in test scripts.
 
 \subsubsection{Test fixtures}
 
-\paragraph{\texttt{rng} \& \texttt{seed}} to manage random factors
+Nengo's test suite defines several test fixtures
+to enable fuzzy testing
+that collects and visualizes performance metrics
+on multiple backends.
 
-\paragraph{\texttt{Simulator}} to switch backend
+\paragraph{\texttt{rng} \& \texttt{seed}}
+enable deterministic testing despite
+all of the random factors that affect a model.
+Test functions that generate random values
+(as inputs to a model, for example)
+generate those values using \texttt{rng},
+which is a random number generator
+with an interface identical to
+NumPy's random module.
+When a test function creates a network,
+it passes in \texttt{seed} to make
+the random components
+of the frontend-to-backend translation deterministic.
+Importantly, these random components
+are seeded by hashing a string uniquely
+identifying each test function,
+ensuring that tolerances must be set
+wide enough that changing the seed
+should only rarely result in test failures.
+The hash function is also seeded
+with a global integer,
+which is changed periodically to ensure
+that tests have good tolerances.
 
-\paragraph{\texttt{nl}} to switch neuron type
+\paragraph{\texttt{Simulator}}
+allows for tests to be run with multiple backends.
+As detailed in section ???,
+each backend must expose a simulator class
+that accepts a network.
+Every test uses this test fixture rather than
+an actual class so that
+the backend-specific simulator class is used
+when the test is run.
+Each backend's test suite loads
+the tests defined in Nengo,
+but replaces the implementation of
+this fixture with their own fixture
+returning that particular backend's simulator class.
 
-\paragraph{\texttt{plt}} to save plots
+\paragraph{\texttt{plt}, \texttt{logger}, \& \texttt{analytics}}
+allow tests to save artifacts from test runs.
+These artifacts are how accuracy and speed metrics
+are collected, and how the figures
+in this paper are generated.
+The \texttt{plt} fixture exposes the Matplotlib \cite{???}
+\texttt{pyplot} interface to a test function.
+These functions can then analyze and plot
+the data generated in a simulation
+(exposed from a simulator's \texttt{data} attribute)
+to visualize the activity in a network.
+Figures are saved in a specified or backend-specific directory.
+The \texttt{logger} fixture exposes a logging interface
+to save arbitrary text to a specified
+or backend-specific directory;
+these are useful for summary statistics
+that can inspected manually.
+For large amounts of data that
+requires more analysis,
+\texttt{analytics} fixture exposes an interface
+to save arbitrary data (in the form of NumPy arrays)
+to specified or backend-specific directories.
 
-\paragraph{\texttt{analytics}} to save data
-
-\paragraph{\texttt{logger}} to save text
+\paragraph{\texttt{analytics\_data}}
+enables comparative testing between
+two runs of the same test.
+The two runs might represent two versions
+of the same backend---one before a
+speedup and one after---or two
+entirely different backends.
+The \texttt{analytics\_data} fixture
+provides the results from those two
+test runs to a single test function,
+allowing for comparisons
+between the two results saved
+with the \texttt{analytics} fixture.
+See Figure~\ref{???} for a
+concrete example of this.
 
 \section{Methods}
 
+Benchmarking involves collecting performance metrics
+for two or more comparable systems.
+Currently, the Nengo test suite collects
+three types of performance metrics
+across five backends.
+
 \subsection{Metrics collected}
 
-\subsubsection{Compliance}
+\paragraph{Compliance\textcolon}
 
-\subsubsection{Accuracy}
+\paragraph{Accuracy\textcolon}
 
-\subsubsection{Speed}
+\paragraph{Speed\textcolon}
 
 \subsection{Backends tested}
 
-\paragraph{Reference}
+\paragraph{Reference\textcolon}
 
-\paragraph{Simplified reference}
+\paragraph{Simplified reference\textcolon}
 
-\paragraph{OpenCL}
+\paragraph{OpenCL\textcolon}
 
-\paragraph{SpiNNaker hardware}
+\paragraph{SpiNNaker hardware\textcolon}
 
-\paragraph{Neurogrid simulation}
+\paragraph{Neurogrid simulation\textcolon}
 
 \section{Results}
 
