@@ -1,4 +1,9 @@
+.DS_Store
+#TEMP LETTING THESE IN FOR NOW plots/
+#TEMP hack ln -s
+presentation/img/plots
 results/
+*.simulator.plots/
 .doit.db
 *.pyc
 
@@ -7,6 +12,9 @@ results/
 *.bbl
 *.blg
 *.log
+
+# Python stuff
+*.egg-info
 
 # Specific outputs
 paper/paper.pdf
