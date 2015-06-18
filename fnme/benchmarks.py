@@ -191,7 +191,7 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile):
 
 # --- 4. SPA sequence with memory
 def test_sequencememory(Simulator, plt, seed, outfile):
-    dimensions = 64
+    dimensions = 256
     subdimensions = 16
     item_time = 0.15
     mem_time = 3.0

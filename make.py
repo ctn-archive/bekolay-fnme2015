@@ -46,14 +46,14 @@ def task_compliance():
 
 def task_benchmarks():
     def run_benchmarks(sim):
-        pytest = ('py.test -p fnme.options --simulator {} -- '
+        pytest = ('py.test -p fnme.options --simulator {}.Simulator -- '
                   'fnme/benchmarks.py'.format(sim))
         return {'name': sim, 'actions': [pytest]}
-    yield run_benchmarks('nengo.Simulator')
-    yield run_benchmarks('nengo_ocl.Simulator')
-    yield run_benchmarks('nengo_distilled.Simulator')
-    yield run_benchmarks('nengo_brainstorm.Simulator')
-    yield run_benchmarks('nengo_spinnaker.Simulator')
+    yield run_benchmarks('nengo')
+    yield run_benchmarks('nengo_ocl')
+    yield run_benchmarks('nengo_distilled')
+    yield run_benchmarks('nengo_brainstorm')
+    yield run_benchmarks('nengo_spinnaker')
 
 
 def task_plots():
