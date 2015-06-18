@@ -1,7 +1,6 @@
 .DS_Store
-#TEMP LETTING THESE IN FOR NOW plots/
-#TEMP hack ln -s
-presentation/img/plots
+plots/
+presentation/scripts/nengo.simulator.*
 results/
 *.simulator.plots/
 .doit.db
