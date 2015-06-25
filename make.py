@@ -5,7 +5,9 @@ Before running this, make sure the `fnme` module is installed,
 by running `python setup.py develop`.
 """
 
+import pkgutil
 import os
+import random
 
 import doit
 from doit.action import CmdAction
@@ -17,7 +19,8 @@ root = os.path.dirname(os.path.realpath(__file__))
 
 
 def task_reset():
-    return {'actions': ['rm -rf ./results/nengo*']}
+    return {'actions': ['rm -rf ./results/probes',
+                        'rm -rf ./results/noprobes']}
 
 
 def task_paper():
@@ -45,15 +48,23 @@ def task_compliance():
 
 
 def task_benchmarks():
-    def run_benchmarks(sim):
-        pytest = ('py.test -p fnme.options --simulator {}.Simulator -- '
-                  'fnme/benchmarks.py'.format(sim))
-        return {'name': sim, 'actions': [pytest]}
-    yield run_benchmarks('nengo')
-    yield run_benchmarks('nengo_ocl')
-    yield run_benchmarks('nengo_distilled')
-    yield run_benchmarks('nengo_brainstorm')
-    yield run_benchmarks('nengo_spinnaker')
+    seed = random.randint(10000, 99999)
+    sims = [sim for sim in ('nengo',
+                            'nengo_ocl',
+                            'nengo_distilled',
+                            'nengo_brainstorm',
+                            'nengo_spinnaker')
+            if pkgutil.find_loader(sim)]
+
+    acts = ['py.test -p fnme.options --simulator {}.Simulator --seed '
+            '{:d} %(pytestargs)s -- fnme/benchmarks.py'.format(sim, seed)
+            for sim in sims]
+
+    return {'actions': acts,
+            'params': [{'name': 'pytestargs',
+                        'short': 'a',
+                        'default': '',
+                        'help': 'Additional flags to pass onto py.test'}]}
 
 
 def task_plots():
@@ -62,7 +73,9 @@ def task_plots():
     yield {'name': 'accuracy',
            'actions': [(fnme.plots.accuracy,)]}
     yield {'name': 'speed',
-           'actions': [(fnme.plots.speed,)]}
+           'actions': [(fnme.plots.speed, (True,))]}
+    yield {'name': 'speed-np',
+           'actions': [(fnme.plots.speed, (False,))]}
 
 
 if __name__ == '__main__':

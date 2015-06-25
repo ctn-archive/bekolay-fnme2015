@@ -1,7 +1,6 @@
 """py.test stuff that runs the benchmarks."""
 
 import importlib
-import random
 
 import pytest
 
@@ -9,8 +8,6 @@ import nengo
 from nengo.tests.conftest import *
 from nengo.utils.testing import Timer
 
-# Change up the seed to get new networks
-nengo.tests.conftest.test_seed = random.randint(10000, 99999)
 
 if nengo.__version__ == '2.0.1':
     # Monkey patch hacks to solve some problems in Nengo 2.0.1
@@ -24,11 +21,16 @@ if nengo.__version__ == '2.0.1':
         if nl is not None:
             self.dirname = os.path.join(self.dirname, nl.__name__)
 
-        modparts = module.__name__.split('.')
-        modparts = modparts[1:]
+        modparts = module.__name__.split('.')[1:]
         self.filename = "%s.%s.pdf" % ('.'.join(modparts), function.__name__)
 
     nengo.utils.testing.Plotter.__init__ = pl_init
+else:
+    # Monkey patch hacks to solve some problems in Nengo master
+    def get_filename(self, ext=''):
+        modparts = self.module_name.split('.')[1:]
+        return "%s.%s.%s" % ('.'.join(modparts), self.function_name, ext)
+    nengo.utils.testing.Recorder.get_filename = get_filename
 
 
 def add_speed_profiling(Simulator):
@@ -52,6 +54,7 @@ def add_speed_profiling(Simulator):
 
 _Simulator = None
 outdir = None
+_probes = True
 
 
 def pytest_configure(config):
@@ -61,10 +64,26 @@ def pytest_configure(config):
     _Simulator = load_class(config.getoption('simulator')[0])
     add_speed_profiling(_Simulator)
 
+    if config.getoption('seed'):
+        # Change up the seed to get new networks
+        nengo.tests.conftest.test_seed = config.getoption('seed')[0]
+
+    global _probes
+    _probes = config.getoption('noprobes')
+
     global outdir
-    outdir = "results/%s" % _Simulator.__module__
+    if _probes:
+        outdir = "results/probes/%s" % _Simulator.__module__
+    else:
+        outdir = "results/noprobes/%s" % _Simulator.__module__
+
     if not os.path.exists(outdir):
         os.makedirs(outdir)
+
+
+@pytest.fixture
+def probes():
+    return _probes
 
 
 def load_class(fully_qualified_name):
@@ -75,8 +94,11 @@ def load_class(fully_qualified_name):
 
 @pytest.fixture
 def outfile(request, seed):
-    return os.path.join(outdir, "%s-%s.txt" % (
+    path = os.path.join(outdir, "%s-%s.txt" % (
         request.function.__name__, nengo.tests.conftest.test_seed))
+    with open(path, 'w') as outf:
+        outf.write('{\n')
+    return path
 
 
 @pytest.fixture
