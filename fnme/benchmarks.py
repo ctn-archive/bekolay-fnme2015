@@ -228,70 +228,75 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile, probes):
         sim.close()
 
 
-# --- 4. SPA sequence with memory
-def test_sequencememory(Simulator, plt, seed, outfile, probes):
-    dimensions = 96
+# --- 4. SPA sequence
+#
+# This builds a basal ganglia that runs through a fixed sequence of actions.
+# The value for the benchmark is a measure of the time taken to go from one
+# item in the sequence to the next.  We compute both a mean and a standard
+# deviation for this timing measure.
+
+def test_sequence(Simulator, plt, seed, outfile, probes):
+    dimensions = 32
     subdimensions = 16
-    item_time = 0.15
-    mem_time = 3.0
-    input_strength = 0.1
-    items = 4
+    T = 4.0
+    seq_length = 10
 
-    with spa.SPA(seed=seed) as model:
-        model.memory = spa.Memory(dimensions=dimensions,
-                                  subdimensions=subdimensions)
+    with spa.SPA() as model:
+        model.state = spa.Memory(dimensions=dimensions,
+                                 subdimensions=subdimensions)
 
-        def memory(t):
-            index = int(t / item_time)
-            if index < items:
-                return '%g*A%d' % (input_strength, index)
+        seq_actions = ['dot(state,A%d) --> state=A%d' % (i, (i+1) % seq_length)
+                       for i in range(seq_length)]
+
+        model.bg = spa.BasalGanglia(spa.Actions(*seq_actions))
+        model.thal = spa.Thalamus(model.bg)
+
+        def stim_state(t):
+            if t < 0.1:
+                return 'A0'
             else:
                 return '0'
 
-        model.input = spa.Input(memory=memory)
+        model.input = spa.Input(state=stim_state)
+
         if probes:
-            p_memory = nengo.Probe(model.memory.state.output, synapse=0.1)
+            p_state = nengo.Probe(model.state.state.output, synapse=0.01)
 
         if 'spinnaker' in Simulator.__module__:
             nengo_spinnaker.add_spinnaker_params(model.config)
             model.config[
-                model.input.input_nodes['memory']
+                model.input.input_nodes['state']
             ].function_of_time = True
 
     sim = Simulator(model)
-    sim.run(items * item_time + mem_time)
+    sim.run(T)
 
     if probes:
-        vocab = model.get_input_vocab('memory')
-        memory = sim.data[p_memory]
+        t = sim.trange()
+        data = sim.data[p_state]
+        vocab = model.get_input_vocab('state')
+        ideal = np.array([vocab.parse('A%d' % i).v for i in range(seq_length)])
 
-        trange = sim.trange()
-        correct = np.array([vocab.parse('A%d' % i).v for i in range(items)]).T
+        dotp = np.dot(data, ideal.T)
 
-        dotp = np.dot(memory, correct)
+        best = np.argmax(dotp, axis=1)
+        delta = np.diff(best)
+        indexes = np.where(delta != 0)
+        # [:, 1:] ignores the first transition, which is meaningless
+        delta_t = np.diff(indexes)[:, 1:] * 0.001
 
-        # measure accuracy at two different vocabulary sizes
-        #  60000: number of basic terms for an adult human
-        #  1000000000: guesstimate of number of complex bound terms (~60000**2)
-        Ms = [60000, 1000000000]
-
-        score = np.zeros((len(Ms), items))
-
-        for j, M in enumerate(Ms):
-            for i in range(items):
-                score[j, i] = vocab.prob_cleanup(dotp[-1, i], M)
-
-        prob_cleanup = np.mean(score, axis=1)
+        mean = np.mean(delta_t)
+        std = np.std(delta_t)
 
         with open(outfile, 'a') as outf:
-            outf.write('"prob_60000": %f,\n' % prob_cleanup[0])
-            outf.write('"prob_1000000000": %f,\n' % prob_cleanup[1])
+            outf.write('"timing_mean": %f,\n' % mean)
+            outf.write('"timing_std": %f,\n' % std)
 
-        lines = plt.plot(trange, dotp)
-        plt.legend(lines, ["Pointer %d" % (i + 1) for i in range(items)],
-                   loc='best')
-        plt.xlabel('Time (s)')
-        plt.ylabel('Similarity to memory representation')
+        plt.subplot(2, 1, 1)
+        plt.plot(t[t < 1.0], dotp[t < 1.0])
+        plt.subplot(2, 1, 2)
+        print(delta_t.shape)
+        plt.plot(delta_t[0], np.ones(delta_t.size), 'o')
 
     if hasattr(sim, 'close'):
         sim.close()
