@@ -17,6 +17,11 @@ import nengo.spa as spa
 from nengo.utils.numpy import rmse
 from nengo.utils.functions import piecewise
 
+try:
+    import nengo_spinnaker
+except ImportError:
+    pass
+
 from .utils import HilbertCurve
 
 
@@ -95,6 +100,10 @@ def test_product(Simulator, plt, seed, outfile, probes):
             probe_direct = nengo.Probe(ens_direct)
             probe_test = nengo.Probe(product_net.output, synapse=0.005)
 
+        if 'spinnaker' in Simulator.__module__:
+            nengo_spinnaker.add_spinnaker_params(model.config)
+            model.config[stimulus].function_of_time = True
+
     sim = Simulator(model)
     sim.run(duration + wait_duration)
 
@@ -157,6 +166,10 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile, probes):
         if probes:
             p_state = nengo.Probe(state, synapse=0.03)
 
+        if 'spinnaker' in Simulator.__module__:
+            nengo_spinnaker.add_spinnaker_params(model.config)
+            model.config[kick].function_of_time = True
+
     sim = Simulator(model)
     sim.run(len(stims) * T)
 
@@ -217,7 +230,7 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile, probes):
 
 # --- 4. SPA sequence with memory
 def test_sequencememory(Simulator, plt, seed, outfile, probes):
-    dimensions = 512
+    dimensions = 96
     subdimensions = 16
     item_time = 0.15
     mem_time = 3.0
@@ -238,6 +251,12 @@ def test_sequencememory(Simulator, plt, seed, outfile, probes):
         model.input = spa.Input(memory=memory)
         if probes:
             p_memory = nengo.Probe(model.memory.state.output, synapse=0.1)
+
+        if 'spinnaker' in Simulator.__module__:
+            nengo_spinnaker.add_spinnaker_params(model.config)
+            model.config[
+                model.input.input_nodes['memory']
+            ].function_of_time = True
 
     sim = Simulator(model)
     sim.run(items * item_time + mem_time)
