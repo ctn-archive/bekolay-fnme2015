@@ -1,0 +1,62 @@
+%%% You will need to have the following packages installed: datetime, fmtcount, etoolbox, fcprefix, which are normally inlcuded in WinEdt. %%%
+\documentclass{frontiers_suppmat} % for all articles
+
+\usepackage{url}
+
+\graphicspath{{../figures/}}
+
+\def\articleType{Supplementary Material}
+\def\keyFont{\fontsize{8}{11}\helveticabold }
+\def\firstAuthorLast{Bekolay {et~al.}}
+\def\Authors{Trevor Bekolay\,$^{1,*}$,
+  Terrence C. Stewart\,$^{1}$,
+  Eric Hunsberger\,$^1$,
+  Andrew Mundy\,$^2$ and
+  Chris Eliasmith\,$^1$}
+\def\Address{$^{1}$Centre for Theoretical Neuroscience,
+  University of Waterloo,
+  Waterloo, ON, Canada\\
+  $^{2}$ Advanced Processors Technologies Research Group,
+  School of Computer Science,
+  University of Manchester,
+  Manchester, UK}
+\def\corrAuthor{Trevor Bekolay}
+\def\corrAddress{Centre for Theoretical Neuroscience,
+  David R. Cheriton School of Computer Science,
+  University of Waterloo,
+  200 University Avenue West,
+  Waterloo, ON  N2L~3G1, Canada}
+\def\corrEmail{tbekolay@uwaterloo.ca}
+
+% \color{FrontiersColor} Is the color used in the Journal name, in the title, and the names of the sections.
+
+\begin{document}
+\onecolumn
+\firstpage{1}
+
+\title[Supplementary Material]{{\helveticaitalic{Supplementary Material}}:\\ \helvetica{ Benchmarking neuromorphic systems with Nengo}}
+\author[\firstAuthorLast ]{\Authors}
+\address{}
+\correspondance{}
+\extraAuth{}
+\topic{Benchmarks and Challenges for Neuromorphic Engineering}
+
+\maketitle
+
+\section{Supplementary Tables and Figures}
+
+\begin{figure}[!ht]
+\begin{center}
+  \includegraphics[width=85mm]{fig7}
+\end{center}
+\textbf{\refstepcounter{figure}\label{fig:01} Supplementary Figure \arabic{figure}.}
+       {Run time for each model with probes removed on each backend.
+         Each bar represents the mean run time across 100 instances
+         of each model;
+         error bars are 95\% confidence intervals.
+         Run time is measured relative to real time;
+         e.g., a value of two indicates that the model ran twice as slow
+         as real time.}
+\end{figure}
+
+\end{document}

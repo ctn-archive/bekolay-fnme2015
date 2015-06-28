@@ -6,11 +6,13 @@ nengo_brainstorms backend, adapted to be run using Nengo test suite.
 Contributors:
   - Terry Stewart (CNRG lab)
   - Trevor Bekolay (CNRG lab)
+  - Jan Gosmann (CNRG lab)
   - Sam Fok (Brains in Silicon, Stanford University)
   - Alexander Neckar (Brains in Silicon, Stanford University)
   - John Aguayo (Brains in Silicon, Stanford University)
 """
 import numpy as np
+import seaborn as sns
 
 import nengo
 import nengo.spa as spa
@@ -22,8 +24,10 @@ try:
 except ImportError:
     pass
 
+from .plots import setup, prettify, onecolumn, twocolumn
 from .utils import HilbertCurve
 
+colors = sns.color_palette()
 
 # --- 1. Communication channel chain
 def test_cchannelchain(Simulator, plt, rng, seed, outfile, probes):
@@ -53,21 +57,21 @@ def test_cchannelchain(Simulator, plt, rng, seed, outfile, probes):
     sim.run(0.5)
 
     if probes:
-        plt.subplot(2, 1, 1)
-        plt.plot(sim.trange(), sim.data[p_input], c='k', lw=2)
-        for p_output in p_outputs:
-            plt.plot(sim.trange(), sim.data[p_output])
+        setup(figsize=(onecolumn * 2, 4.0))
+        for i, p_output in enumerate(p_outputs):
+            plt.plot(sim.trange(), sim.data[p_output],
+                     c=colors[i % len(colors)])
+        plt.plot(sim.trange(), sim.data[p_input], c='k', lw=1)
+        plt.yticks((-0.6, 0, 0.6))
+        plt.xticks((0, 0.05, 0.1))
         plt.ylabel('Decoded output')
-        plt.xticks(())
-
-        plt.subplot(2, 1, 2)
-        for p_output in p_outputs:
-            plt.plot(sim.trange(), np.sum(np.abs(
-                sim.data[p_output] - sim.data[p_input]), axis=1))
-        plt.ylabel("Error")
         plt.xlabel('Time (s)')
+        plt.saveas = 'results-1.svg'
 
         with open(outfile, 'a') as outf:
+            outf.write('"n_neurons": %d,\n' % sum(
+                e.n_neurons for e in model.all_ensembles))
+            outf.write('"simtime": 0.5,\n')
             outf.write('"rmse": %f,\n' % (
                 rmse(sim.data[p_outputs[-1]][sim.trange() > 0.4], value)))
 
@@ -97,6 +101,7 @@ def test_product(Simulator, plt, seed, outfile, probes):
         ens_direct = nengo.Node(output=lambda t, x: x[0] * x[1], size_in=2)
         nengo.Connection(stimulus, ens_direct)
         if probes:
+            probe_inp = nengo.Probe(product_net.product.ensembles[0])
             probe_direct = nengo.Probe(ens_direct)
             probe_test = nengo.Probe(product_net.output, synapse=0.005)
 
@@ -112,19 +117,25 @@ def test_product(Simulator, plt, seed, outfile, probes):
         actual = sim.data[probe_test][after_wait]
         target = sim.data[probe_direct][after_wait]
 
+        setup(figsize=(onecolumn * 2, 4.0))
         plt.subplot(2, 1, 1)
-        plt.plot(sim.trange()[after_wait], target, c='k', lw=2)
-        plt.plot(sim.trange()[after_wait], actual, c='b')
-        plt.ylabel('Decoded output (product)')
+        plt.plot(sim.trange()[after_wait], sim.data[probe_inp][after_wait])
+        plt.ylabel('Decoded input')
+        plt.xlim(left=wait_duration, right=duration + wait_duration)
         plt.xticks(())
 
         plt.subplot(2, 1, 2)
-        plt.plot(sim.trange()[after_wait],
-                 np.sum(np.abs(actual - target), axis=1))
-        plt.ylabel('Error')
+        plt.plot(sim.trange()[after_wait], actual, c=colors[2])
+        plt.plot(sim.trange()[after_wait], target, c='k', lw=1)
+        plt.ylabel('Decoded product')
         plt.xlabel('Time (s)')
+        plt.xlim(left=wait_duration, right=duration + wait_duration)
+        plt.saveas = 'results-2.svg'
 
         with open(outfile, 'a') as outf:
+            outf.write('"n_neurons": %d,\n' % sum(
+                e.n_neurons for e in model.all_ensembles))
+            outf.write('"simtime": %f,\n' % (duration + wait_duration))
             outf.write('"rmse": %f,\n' % (rmse(actual, target)))
 
     if hasattr(sim, 'close'):
@@ -205,16 +216,18 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile, probes):
                               ideal_fft[i] / np.linalg.norm(ideal_fft[i]))
 
         with open(outfile, 'a') as outf:
+            outf.write('"n_neurons": %d,\n' % sum(
+                e.n_neurons for e in model.all_ensembles))
+            outf.write('"simtime": %f,\n' % (len(stims) * T))
             outf.write('"score": %f,\n' % np.mean(score))
 
-        plt.subplot(2, 1, 1)
-        lines = plt.plot(np.arange(steps) * dt, data.T)
+        setup(figsize=(twocolumn * 1.33, 3.0))
+        plt.subplot(1, 2, 1)
+        plt.plot(np.arange(steps) * dt, data.T)
         plt.xlabel('Time (s)')
         plt.ylabel('Decoded value')
-        plt.legend(lines, ['%gHz' % f for f in ideal_freqs],
-                   loc='best', prop={'size': 8})
 
-        plt.subplot(2, 1, 2)
+        plt.subplot(1, 2, 2)
         lines = plt.plot(np.fft.fftshift(freqs),
                          np.fft.fftshift(fft, axes=1).T,
                          drawstyle="steps-mid")
@@ -223,6 +236,7 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile, probes):
         plt.ylabel('Power of decoded value')
         plt.legend(lines, ['%gHz' % f for f in ideal_freqs],
                    loc='best', prop={'size': 8})
+        plt.saveas = 'results-3.svg'
 
     if hasattr(sim, 'close'):
         sim.close()
@@ -239,7 +253,7 @@ def test_sequence(Simulator, plt, seed, outfile, probes):
     dimensions = 32
     subdimensions = 16
     T = 4.0
-    seq_length = 10
+    seq_length = 6
 
     with spa.SPA() as model:
         model.state = spa.Memory(dimensions=dimensions,
@@ -289,14 +303,20 @@ def test_sequence(Simulator, plt, seed, outfile, probes):
         std = np.std(delta_t)
 
         with open(outfile, 'a') as outf:
+            outf.write('"n_neurons": %d,\n' % sum(
+                e.n_neurons for e in model.all_ensembles))
+            outf.write('"simtime": %f,\n' % T)
             outf.write('"timing_mean": %f,\n' % mean)
             outf.write('"timing_std": %f,\n' % std)
 
-        plt.subplot(2, 1, 1)
+        setup(figsize=(onecolumn * 2, 3.0))
         plt.plot(t[t < 1.0], dotp[t < 1.0])
-        plt.subplot(2, 1, 2)
-        print(delta_t.shape)
-        plt.plot(delta_t[0], np.ones(delta_t.size), 'o')
+        for transition in t[indexes[0]]:
+            plt.axvline(transition, c='0.5', lw=1, ls=':')
+        plt.ylabel('Similarity to item (dot product)')
+        plt.xlabel('Time (s)')
+        plt.xlim(right=1.0)
+        plt.saveas = 'results-4.svg'
 
     if hasattr(sim, 'close'):
         sim.close()

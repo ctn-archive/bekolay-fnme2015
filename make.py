@@ -25,8 +25,12 @@ def task_reset():
 
 def task_paper():
     d = os.path.join(root, 'paper')
-    return {'actions': [CmdAction('rubber --pdf paper.tex', cwd=d)],
-            'targets': [os.path.join(d, 'paper.pdf')]}
+    yield {'name': 'main',
+           'actions': [CmdAction('rubber --pdf paper.tex', cwd=d)],
+           'targets': [os.path.join(d, 'paper.pdf')]}
+    yield {'name': 'supplementary',
+           'actions': [CmdAction('rubber --pdf supplementary.tex', cwd=d)],
+           'targets': [os.path.join(d, 'supplementary.pdf')]}
 
 
 def task_compliance():
@@ -68,14 +72,23 @@ def task_benchmarks():
 
 
 def task_plots():
-    yield {'name': 'compliance',
-           'actions': [(fnme.plots.compliance,)]}
     yield {'name': 'accuracy',
            'actions': [(fnme.plots.accuracy,)]}
     yield {'name': 'speed',
            'actions': [(fnme.plots.speed, (True,))]}
     yield {'name': 'speed-np',
            'actions': [(fnme.plots.speed, (False,))]}
+
+
+def task_combine():
+    yield {'name': 'fig1',
+           'actions': [(fnme.plots.fig1,)]}
+    yield {'name': 'fig2',
+           'actions': [(fnme.plots.fig2,)]}
+    yield {'name': 'fig3',
+           'actions': [(fnme.plots.fig3,)]}
+    yield {'name': 'fig4',
+           'actions': [(fnme.plots.fig4,)]}
 
 
 if __name__ == '__main__':

@@ -3,20 +3,16 @@
 \usepackage{url,lineno}
 \linenumbers
 
+\graphicspath{{../figures/}}
+
 \def\keyFont{\fontsize{8}{11}\helveticabold }
 \def\firstAuthorLast{Bekolay {et~al.}}
 \def\Authors{Trevor Bekolay\,$^{1,*}$,
-  Terrence C. Stewart\,$^{1}$,
-  Eric Hunsberger\,$^1$,
-  Andrew Mundy\,$^2$ and
+  Terrence C. Stewart\,$^{1}$, and
   Chris Eliasmith\,$^1$}
 \def\Address{$^{1}$Centre for Theoretical Neuroscience,
   University of Waterloo,
-  Waterloo, ON, Canada\\
-  $^{2}$ Advanced Processors Technologies Research Group,
-  School of Computer Science,
-  University of Manchester,
-  Manchester, UK}
+  Waterloo, ON, Canada}
 \def\corrAuthor{Trevor Bekolay}
 \def\corrAddress{Centre for Theoretical Neuroscience,
   David R. Cheriton School of Computer Science,
@@ -494,139 +490,547 @@ concrete example of this.
 
 Benchmarking involves collecting performance metrics
 for two or more comparable systems.
-Currently, the Nengo test suite collects
-three types of performance metrics
-across five backends.
+We collect three metrics in this study,
+as a proof of concept that the Nengo test suite
+can be used to collect meaningful benchmarks
+for neural simulators and neuromorphic hardware.
 
 \subsection{Metrics collected}
 
-\paragraph{Compliance\textcolon}
+\paragraph{Compliance}
+is the number of tests that a particular backend
+passes successfully, relative to the reference
+backend, which must pass all tests.
+While this metric can give an indication
+of how many features a particular backend supports,
+it does not take into account how commonly used
+a particular feature is;
+for this reason, a backend that has relatively
+low compliance can still be very useful
+in many situations.
 
-\paragraph{Accuracy\textcolon}
+\paragraph{Accuracy}
+measures how well a particular backend
+implements a desired model.
+The actual accuracy metric depends
+on the desired model,
+but in simple cases can be
+the root mean squared error (RMSE)
+between a desired signal
+and the actual signal decoded
+from an ensemble.
 
-\paragraph{Speed\textcolon}
+\paragraph{Speed}
+measures the amount of time it takes
+for a backend to run a model.
+Primarily, we are concerned with
+the amount of time taken
+in \texttt{run} calls;
+however, we also separately measure how long
+each backend spends building each model
+(i.e., the time spent in \texttt{\_\_init\_\_}),
+as models must be built before being run.
+
+\subsection{Test models}
+
+Unlike the compliance metric,
+accuracy and speed are only collected
+for tests that define an an accuracy metric
+(i.e., those that use the \texttt{analytics} fixture).
+In this study, we focus on four such tests,
+which we claim are all necessary components
+of large-scale cognitive brain models,
+though they are by no means a sufficient set
+for all complex cognitive behaviors.
+
+\paragraph{1. Communication channel chain.}
+In this model,
+five ensembles,
+comprised of 500 leaky integrate-and-fire (LIF) neurons total,
+are connected in series,
+with a communication channel
+(i.e., the identity function)
+computed across each connection.
+This model, therefore, attempts to faithfully
+communicate an input signal to
+the last ensemble in the chain.
+The input signal used is a static vector.
+This model tests how
+robust each backend is to noise introduced
+by representing a vector space
+in the activity of spiking neurons.
+
+\paragraph{2. Two-dimensional product.}
+In this model,
+the scalar product is computed
+from a two-dimensional ensemble
+comprised of 100 LIF neurons.
+Since the product is nonlinear,
+we use a space-filling curve
+(the Hilbert curve \cite{???})
+as the input signal to ensure that
+we sample the entire two-dimensional space.
+This model tests each backend's
+ability to compute a nonlinear function,
+albeit a low-dimensional one.
+Despite the low dimensionality,
+two-dimensional products are frequently used
+in large-scale models;
+it is the primary operation used to
+bind semantic pointers, for example
+\cite{???}.
+
+\paragraph{3. Controlled oscillator.}
+In this model,
+a three-dimensional ensemble is recurrently connected
+such that the first two dimensions continuously
+traverse a limit cycle
+(i.e., they implement a cyclic attractor),
+and the third dimension controls the speed
+and direction of the oscillation.
+As input, we provide an initial stimulus
+to start the oscillation,
+and provide a control signal
+to cause oscillation at
+2Hz, 1Hz, 0Hz, -1Hz, and -2Hz.
+In total, the model is comprised of 600 LIF neurons.
+This model tests each backend's ability
+to stably implement a dynamical system,
+which is required for many cognitive functions
+like working memory and motor control.
+
+\paragraph{4. Basal Ganglia sequence.}
+In this model, comprised of 4900 LIF neurons,
+a basal ganglia is created (as described in \cite{???})
+that runs through a fixed sequence of actions.
+Stewart et al. \cite{???} have showed that
+these simple action sequences should
+switch at a rate of ???.
+This model tests that each backend can
+build this basal ganglia model,
+which is commonly used for action selection,
+and that actions can be selected at the
+hypothesized rate.
 
 \subsection{Backends tested}
 
-\paragraph{Reference\textcolon}
+We collected the three benchmark metrics
+on five Nengo backends.
 
-\paragraph{Simplified reference\textcolon}
+\paragraph{1. Reference (\texttt{nengo}).}
+The reference backend is designed to run quickly
+on any general purpose computer
+by using NumPy \cite{???}
+for fast vectorized computations.
+It is included with the \texttt{nengo} frontend
+as \texttt{nengo.Simulator}.
+When appropriate, other backends will be benchmarked
+relative to the reference backend,
+which has the most features but does not target
+specialized hardware.
 
-\paragraph{OpenCL\textcolon}
+\paragraph{2. Distilled (\texttt{nengo\_distilled}).}
+The distilled backend is intended as a teaching tool,
+and as a template for building new backends.
+It can also run on any general purpose computer,
+and also uses NumPy for fast vectorized computations,
+but does not aim to implement all of the features
+implemented by the reference backend,
+and omits some optimizations that obfuscate code.
+Therefore, the distilled backend is easier to read
+and suitable for learning about Nengo
+or as a starting point for new backends.
 
-\paragraph{SpiNNaker hardware\textcolon}
+\paragraph{3. OpenCL (\texttt{nengo\_ocl}).}
+The OpenCL backend uses the Open Computing Language
+(OpenCL; \cite{???})
+to run Nengo models on many different computing devices,
+including graphical processing units (GPUs),
+and field-programmable gate arrays (FPGAs).
+In contrast to the distilled backend,
+it is designed to run Nengo models
+as quickly as possible,
+using fast general purpose computing devices
+like GPUs and any optimizations available,
+at the cost of code readability.
 
-\paragraph{Neurogrid simulation\textcolon}
+\paragraph{4. Neurogrid software (\texttt{nengo\_brainstorm}).}
+The Neurogrid backend is a software implementation
+of a potential neuromorphic chip being developed
+by Boahen et al. \cite{???}.
+It does not aim for speed;
+instead, it attempts to emulate the hardware
+in order to test its applicability
+to large-scale neural models.
+If the emulated hardware can perform well,
+then it follows that actual hardware
+will also perform well,
+but will be much faster.
+
+\paragraph{5. SpiNNaker hardware (\texttt{nengo\_spinnaker}).}
+The SpiNNaker backend targets
+the eponymous neuromorphic hardware
+developed by Furber et al. \cite{???}.
+In contrast to the Neurogrid backend,
+this backend targets physical neuromorphic hardware,
+and therefore is concerned
+both with accuracy and speed.
+
+\subsection{Hardware used for running benchmarks}
+
+??? ask Xuan
+
+SpiNN-5 board
 
 \section{Results}
 
+\subsection{Compliance}
+
+Table~\ref{Tab:01} gives compliance results for
+all backends except the SpiNNaker backend,
+which is not yet set up to run the Nengo test suite.
+Of the four currently running unit tests,
+the OpenCL backend has the highest compliance
+(other than the reference backend).
+The distilled backend has lower compliance
+than OpenCL, which follows from its stated goal
+of being simple but not necessarily feature-rich.
+The Neurogrid backend is the least compliant,
+but it is still an early experimental test bed;
+this is not necessarily indicative of the
+final Neurogrid hardware backend being
+less compliant than other backends.
+
+\subsection{Accuracy}
+
+Figure~\ref{fig:01} gives accuracy results
+for each backend on the chained communication channel model.
+The boxplot shows that all five backends can
+implement this model accurately,
+despite five sources of potential noise.
+
+Figure~\ref{fig:02} gives accuracy results
+for the two-dimensional product model.
+In this case, while all of the backends
+perform well, the SpiNNaker backend
+performs significantly worse than the
+other four backends.
+Its performance, however, is still well within
+acceptable ranges for the two-dimensional product model.
+
+Figure~\ref{fig:03} gives accuracy results
+for the controlled oscillator model.
+The reference and OpenCL backends perform well here,
+as do the distilled and Neurogrid backends.
+The SpiNNaker backend performs well in most cases,
+but some instances of the model
+are significantly less accurate
+than the majority of instances.
+
+Figure~\ref{fig:04} gives accuracy results
+for the basal ganglia sequence model.
+Again, all of the backends perform similarly,
+except for the SpiNNaker backend.
+All other backends have a transition time
+around 43 milliseconds, which matches
+the results from Stewart et al. 2010 \cite{???}
+for simple actions.
+The SpiNNaker backend has a transition time
+around 55 milliseconds, which is slower
+than the time reported by Stewart et al.
+for simple actions, but faster than the
+time reported for complex actions.
+
+\subsection{Speed}
+
+Figures~\ref{fig:05} and \ref{fig:06} show
+the build and run speeds for all backends, respectively.
+While build time is not critical to optimize,
+it is worth noting that the reference backend
+has consistently fast builds.
+The OpenCL backend is also usually fast,
+but can be slow for certain types of networks
+(e.g., the chained communication channel model).
+The distilled and Neurogrid backends---which
+have a very similar build process---become
+slow when dealing with moderately sized models
+(e.g., the basal ganglia sequence model,
+which contains 4900 neurons).
+The SpiNNaker backend incurs an unavoidable cost
+in setting up the hardware,
+though it builds the largest model faster than
+the distilled and Neurogrid backends.
+
+The run time results are of the utmost importance
+when evaluating backends for different applications,
+especially those that require real-time interaction,
+such as robotics. In general, all backends
+perform adequately for the three smaller models.
+The OpenCL backend is significantly slower for small
+models, like the product and controlled oscillator models.
+SpiNNaker, on the other hand, is slower than other backends
+for these models, but only because its goal
+is to run in real-time even if it is possible to run faster.
+(??? Andrew is this true?)
+The most important result is for the largest model,
+the basal ganglia sequence.
+In this model, the distilled and Neurogrid backends
+performed very poorly
+(though neither has speed as a primary goal).
+The reference backend also did not perform well,
+operating at nearly eight times slower than real-time.
+The OpenCL backend performed well, operating at around
+four times slower than real-time.
+The best performance was seen by the SpiNNaker backend,
+however, which operated at around 1.5 times real-time
+on this moderately-sized model.
+
+Despite the fast run times for
+the OpenCL and SpiNNaker backends,
+we also investigated the possibility
+that probes were slowing these backend down,
+since probes require moving data from
+their native platform (GPU or SpiNNaker board)
+to the CPU. However, we found that
+removing probes from these models
+made almost no impact on their run time
+(see Figure~\ref{Fig:07}).
+
 \section{Discussion}
+
+The most important finding from these benchmarks
+is that specialized hardware (including GPUs)
+can result in significantly faster run times
+for certain models,
+with little to no cost in accuracy.
+The conditions under which the OpenCL backend
+performs slower than the reference backend
+(e.g., the product and controlled oscillator models)
+bear closer inspection to determine the source
+of the slowdown.
+Similarly, we should investigate
+the model instances in which the SpiNNaker backend
+is less accurate (e.g., in the controlled oscillator model)
+or different from other backends
+(e.g., in the basal ganglia sequence model).
+
+Above and beyond the benchmarking results,
+however, we assert that the primary contribution
+of this study is to provide evidence that Nengo
+has a tested, stable, productive frontend
+that can target multiple backends,
+and therefore provides a platform
+for benchmarking neuromorphic backends,
+and other neural simulators.
+While this is similar to the goal
+of similar projects, such a PyNN \cite{???},
+Nengo is unique in focusing on large-scale simulations,
+rather than attempting to support
+detailed single-neuron models
+(though this capability is still possible in Nengo;
+see \cite{???}).
+
+While we cannot claim that Nengo
+solves all of complications that arise
+in benchmarking,
+we believe that it improves upon
+the three major issues identified in the introduction.
+First, benchmarking neuromorphic hardware
+with Nengo is less biased than
+hardware-specific benchmarks,
+because the purpose of Nengo is
+to make functionally interesting large-scale models.
+These models are typically build and tested
+in the reference backend,
+leaving little opportunity to introduce
+hardware-specific optimizations
+that can bias benchmarks.
+
+Second, there is less wasted effort
+in using Nengo for benchmarking,
+as the only requirement for using
+Nengo is to develop a backend.
+Building a Nengo backend for
+a piece of neuromorphic hardware
+gives access to all of the models
+already developed for it,
+which is reason enough to develop a backend.
+The ability to collect functionally relevant benchmarks
+comes ``for free'' once the backend exists.
+
+Third, these benchmarks are more likely to
+remain up-to-date because backend developers
+themselves do not have to implement or update
+these benchmarks;
+they will be implemented to test Nengo's
+capabilities as a neural simulator,
+as an extension of the existing test suite.
+Once implemented, backends that implement
+the features that are used in a particular benchmark
+should not have to modify their own code
+to run those benchmarks on their own hardware.
+
+???concluding remarks
 
 \subsection{Data Sharing}
 
-%% Frontiers supports the policy of data sharing, and authors are advised
-%% to make freely available any materials and information described in
-%% their article, and any data relevant to the article (while not
-%% compromising confidentiality in the context of human-subject research)
-%% that may be reasonably requested by others for the purpose of academic
-%% and non-commercial research. In regards to deposition of data and data
-%% sharing through databases, Frontiers urges authors to comply with the
-%% current best practices within their discipline.
+???put results.zip on figshare
+
+???link to Github
 
 \section*{Disclosure/Conflict-of-Interest Statement}
 
-%Frontiers follows the recommendations by the International Committee
-%of Medical Journal Editors
-%(http://www.icmje.org/ethical_4conflicts.html) which require that all
-%financial, commercial or other relationships that might be perceived
-%by the academic community as representing a potential conflict of
-%interest must be disclosed. If no such relationship exists, authors
-%will be asked to declare that the research was conducted in the
-%absence of any commercial or financial relationships that could be
-%construed as a potential conflict of interest. When disclosing the
-%potential conflict of interest, the authors need to address the
-%following points: • Did you or your institution at any time receive
-%payment or services from a third party for any aspect of the
-%submitted work?  • Please declare financial relationships with
-%entities that could be perceived to influence, or that give the
-%appearance of potentially influencing, what you wrote in the
-%submitted work.  • Please declare patents and copyrights, whether
-%pending, issued, licensed and/or receiving royalties relevant to the
-%work.  • Please state other relationships or activities that readers
-%could perceive to have influenced, or that give the appearance of
-%potentially influencing, what you wrote in the submitted work.
-
-%% The authors declare that the research was conducted in the absence of
-%% any commercial or financial relationships that could be construed as a
-%% potential conflict of interest.
+???probably something about ABR here?
 
 \section*{Author Contributions}
 
-%When determining authorship the following criteria should be observed:
-%• Substantial contributions to the conception or design of the work; or the acquisition, analysis, or interpretation of data for the work; AND
-%• Drafting the work or revising it critically for important intellectual content; AND
-%• Final approval of the version to be published ; AND
-%• Agreement to be accountable for all aspects of the work in ensuring that questions related to the accuracy or integrity of any part of the work are appropriately investigated and resolved.
-%Contributors who meet fewer than all 4 of the above criteria for authorship should not be listed as authors, but they should be acknowledged. (http://www.icmje.org/roles_a.html)
-
-%% The statement about the authors and contributors can be up to several
-%% sentences long, describing the tasks of individual authors referred to
-%% by their initials and should be included at the end of the manuscript
-%% before the References section.
+???todo
 
 \section*{Acknowledgments}
-%% Acknowledgments
+
+???todo
+(Andrew Mundy for SpiNNaker help, feedback on first draft,
+Xuan for GPU server, Eric for help in getting OCL benchmarks running,
+James for implementing most of OCL, Jan for product benchmark)
 
 \paragraph{Funding\textcolon} %% Funding
-
-\section*{Supplemental Data}
-%% Supplementary Material should be uploaded separately on submission, if
-%% there are Supplementary Figures, please include the caption in the
-%% same file as the figure. LaTeX Supplementary Material templates can be
-%% found in the Frontiers LaTeX folder
 
 \bibliographystyle{frontiersinSCNS}
 \bibliography{paper}
 
 \section*{Figures}
 
+\begin{table}[!ht]
+\textbf{\refstepcounter{table}\label{Tab:01} Table \arabic{table}.}{
+  Compliance of four backends.}
+
+\processtable{ }
+{\begin{tabular}{lcc}\toprule
+ Backend & Number of tests passed & Percentage of tests passed\\\midrule
+ Reference (\texttt{nengo}) & 212 & 100\% \\
+ Distilled (\texttt{nengo\_distilled}) & 129 & 60.8\% \\
+ OpenCL (\texttt{nengo\_ocl}) & 187 & 88.2\% \\
+ Neurogrid (\texttt{nengo\_brainstorm}) & 107 & 50.4\% \\\botrule
+\end{tabular}}{}
+\end{table}
+
+
+\begin{figure}[!ht]
+\begin{center}
+  \includegraphics[width=85mm]{fig1}
+\end{center}
+\textbf{\refstepcounter{figure}\label{fig:01} Figure \arabic{figure}.}
+       {Chained communication channel model. (Top) One example instance
+         of the model run on the reference backend; the decoded output
+         of the five chained two-dimensional ensembles during the first
+         12 milliseconds of the simulation are shown.
+         Each ensemble reaches approximately the correct value of
+         $[-0.6, 0.6]$ (indicated with the solid black line)
+         but with slight delays depending on their position in the chain.
+         (Bottom) The aggregated accuracy results for each backend on the
+         chained communication channel model. The observed metric is the root
+         mean-squared error (RMSE) between the decoded output of the last
+         ensemble in the chain and the correct value (which is randomly
+         selected on each trial), during the last 100 milliseconds of the
+         500 millisecond simulation. The box shows the median and
+         inter-quartile range, while the whiskers extend to 1.5 times the
+         inter-quartile range; outliers are not shown.}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+  \includegraphics[width=85mm]{fig2}
+\end{center}
+\textbf{\refstepcounter{figure}\label{fig:02} Figure \arabic{figure}.}
+       {Two-dimensional product model. (Top) One example instance of the model
+         run on the reference backend; the decoded input represented
+         by the two-dimensional ensemble is shown. The input signal is
+         designed to fully explore the two-dimensional vector space
+         in the range $[-1, 1]$.
+         (Middle) The decoded product represented by an ensemble downstream
+         of the ensemble representing the input. It closely matches the
+         correct product (indicated with the solid black line).
+         (Bottom) The aggregated accuracy results for each backend on the
+         two-dimensional product model. The measured metric is the root
+         mean-squared error (RMSE) between the decoded output of the ensemble
+         representing the product and the correct product, during the whole
+         range of inputs provided over 5 simulated seconds (after a 500
+         millisecond wait period to allow the input ensemble to reach the
+         correct initial state). The box shows the median and
+         inter-quartile range, while the whiskers extend to 1.5 times the
+         inter-quartile range; outliers are not shown.}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+  \includegraphics[width=180mm]{fig3}
+\end{center}
+\textbf{\refstepcounter{figure}\label{fig:03} Figure \arabic{figure}.}
+       {Controlled two-dimensional oscillator model. (Left) One example
+         instance of the model run on the reference backend; the decoded
+         value represented by one of the two dimensions in the oscillatory
+         ensemble is shown. The control signal dictating the frequency of
+         oscillation changes every two seconds; in this plot each two second
+         period is overlaid. Each signal oscillates at approximately the
+         correct frequency (see middle for legend).
+         (Middle) The power spectrum of each two second period.
+         High power is seen only at the frequency we attempt to induce,
+         for each of the five test frequencies.
+         (Right) The aggregated accuracy results for each backend on the
+         two-dimensional product model. The measured metric is the similarity
+         between the power spectrum (calculated using the Fast Fourier
+         Transform or FFT) of the decoded output of one of the two oscillatory
+         dimensions in the ensemble, and the ideal power spectrum,
+         computed on a pure sine wave oscillating at the induced frequency.
+         Similarity is computed using a normalized dot product across
+         all frequencies. The box shows the median and
+         inter-quartile range, while the whiskers extend to 1.5 times the
+         inter-quartile range; outliers are not shown.}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+  \includegraphics[width=85mm]{fig4}
+\end{center}
+\textbf{\refstepcounter{figure}\label{fig:04} Figure \arabic{figure}.}
+       {Basal Ganglia sequence model. (Top) One example instance
+         of the model run on the reference backend; the similarity between
+         the current representation in working memory and the six possible
+         actions is shown (note that in the full benchmark, ten items are
+         used). The model quickly progresses from one action to the next,
+         cycling back at the end of the six items. The point at which the
+         model switches from selecting one action to another action
+         (the transition times) are indicated with dashed grey lines.
+         (Bottom) The aggregated accuracy results for each backend on the
+         basal ganglia sequence model. The observed metric is the mean
+         time to transition from one action to the next. The model is run
+         for four second, allowing for approximately 90 transitions, depending
+         on the transition time. The box shows the median and
+         inter-quartile range, while the whiskers extend to 1.5 times the
+         inter-quartile range; outliers are not shown.}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+  \includegraphics[width=85mm]{fig5}
+\end{center}
+\textbf{\refstepcounter{figure}\label{fig:05} Figure \arabic{figure}.}
+       {Build time for each model on each backend. Each bar represents
+         the mean build time across 150 instances of each model;
+         error bars are 95\% confidence intervals.}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+  \includegraphics[width=85mm]{fig6}
+\end{center}
+\textbf{\refstepcounter{figure}\label{fig:06} Figure \arabic{figure}.}
+       {Run time for each model on each backend. Each bar represents
+         the mean run time across 150 instances of each model;
+         error bars are 95\% confidence intervals.
+         Run time is measured relative to real time;
+         e.g., a value of two indicates that the model ran twice as slow
+         as real time.}
+\end{figure}
+
 \end{document}
-
-
-%% \begin{table}[!t]
-%% \textbf{\refstepcounter{table}\label{Tab:01} Table \arabic{table}.}{
-%%   Maximum size of the Manuscript }
-
-%% \processtable{ }
-%% {\begin{tabular}{lllll}\toprule
-%%  & Abstract max. legth (incl. spaces) & Figures or tables & Manuscript max. length & Final PDF length\\\midrule
-%%  Clinical Case Study & & & &\\
-%%  Clinical Trial & & & &\\
-%%  Hypothesis and Theory & & & &\\
-%%  Methods & 2000 characters  & 15 & 12000 words & 12 pages\\
-%%  Original Research & & & &\\
-%%  Review & & & &\\
-%%  Technology Report & & & &\\
-%%  Focused Review & 2000 characters & 5 & 5000 words & 5 pages\\
-%%  CPC &  1250 characters& 6 & 2500 words & 4 pages\\
-%%  Perspective & 1250 characters & 2 & 3000 words & 3 pages\\
-%%  Mini Review & & & &\\
-%%  Classification & 1250 characters & 10 & 2000 words & 12 pages\\
-%%  Editorial & none & none & 1000 words & 1 page \\
-%%  Book review & & & &\\
-%%  Frontiers Commentary & none & 1 & 1000 words & 1 page\\
-%%  General Commentary & & & &\\
-%%  Field Grand Challenge & & & &\\
-%%  Opinion & none & 1 & 2000 words & 2 pages\\
-%%  Specialty Grand Challenge& & & &\\\botrule
-%% \end{tabular}}{}
-%% \end{table}
-
-%% \begin{figure}[h!]
-%% \begin{center}
-%% \includegraphics[width=10cm]{logo1}
-%% \end{center}
-%% \textbf{\refstepcounter{figure}\label{fig:01} Figure \arabic{figure}.}
-%%        { Enter the caption for your figure here.  Repeat as necessary
-%%          for each of your figures }
-%% \end{figure}
