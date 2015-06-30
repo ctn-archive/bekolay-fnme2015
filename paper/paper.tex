@@ -72,20 +72,19 @@ Several Nengo-compatible simulators (backends)
 have been developed that can
 run Nengo models on diverse platforms,
 including neuromorphic hardware.
-Nengo's separation between frontend and backend
-and rigorous test suite
+Nengo's separation between frontend and backend,
+as well as its rigorous test suite,
 provide standardized comparisons
 between different neuromorphic implementations
-that are geared toward (???) functional performance,
-rather than artificial metrics
-that may or may not contribute to functional performance.
+with respect to functional performance.
 
 The end result is a set of benchmarks that
 are written once but run on all backends,
 making new benchmarks easy to implement.
 Nengo's primary goal is to
 build large-scale functional models,
-and contains tests of functional performance;
+and hence its codebase contains
+tests of functional performance;
 it is therefore not intentionally
 biased in favor of any particular backend.
 While there is effort involved in creating
@@ -94,7 +93,7 @@ the reason to build such a backend
 is to leverage the large-scale modelling interface
 provided by Nengo;
 the ability to collect benchmarks
-is provided essentially for free.
+is automatically provided to any Nengo backend.
 Finally, since the test suite exists
 to ensure that Nengo continues to function
 correctly, and is run frequently using
@@ -102,7 +101,7 @@ continuous integration systems,
 it will continue to grow and be run frequently,
 rather than becoming obsolete in the future.
 
-Other software that do similar things:
+???expand Other software that do similar things:
 many neural simulators exist, and have tests,
 but don't have the high-level API
 that Nengo has.
@@ -114,16 +113,20 @@ and b) can't use diverse backends.
 ??? In the subsequent sections,
 we detail the architecture of Nengo's
 frontend and backend,
-and describe what each backend
+and describe what any backend
 is required to implement.
 We explain Nengo's testing framework,
 including descriptions of the testing fixtures
 used to collect and visualize benchmarks.
-We then list the metrics that will be collected,
-and the backends on which we will collect metrics.
-Finally, we will show and discuss
+We then list the metrics that are collected
+in this paper,
+and the backends on which we collect metrics.
+Finally, we show and discuss
 the results of collecting those metrics
 for each backend.
+
+??? Name backends and give brief intro to them
+in intro. Can then refer to them in other sections.
 
 \section{Background}
 
@@ -162,9 +165,7 @@ or other inter-process communication protocols.
 
 Nengo contains five frontend objects
 that validate and store symbolic information
-about the neural model that will be simulated.
-A lot of reasoning can be done at this symbolic level,
-which takes significant burdens off of each backend.
+about the neural model to be simulated.
 
 The primary abstraction in Nengo is the \textit{Ensemble},
 which is a group of neurons (or neuron-like functions)
@@ -186,14 +187,21 @@ As such, the only mandatory parameter
 is what vector should be represented;
 this can be specified as a constant vector,
 or as a function of time.
+The \textit{Node} allows the model to
+interact with arbitrary code,
+which can simulate an environment,
+connect the model to a sensor or actuator,
+and so on.
 
 The \textit{Connection} connects two objects
 (e.g., \textit{Ensembles} or \textit{Nodes}) together.
 The two objects being connected are the only mandatory parameters;
-the synapse model filtering the connection
-and a function applied to the vector
-communicated across the connection
-can optionally be specified.
+the synapse model filtering the connection,
+a function applied to the vector
+communicated across the connection,
+and one or more learning rules
+can optionally be specified,
+along with several other optional parameters.
 
 The \textit{Probe} denotes that a particular
 quantity in the simulation should be recorded
@@ -202,6 +210,8 @@ The object to be probed must be specified;
 the attribute of that object,
 a sampling rate, and a synapse model for filtering
 can optionally be specified.
+The \textit{Probe} provides the main mechanism
+for data collection during run time.
 
 An important distinction between typical
 parameters and those specified in Nengo
@@ -212,7 +222,7 @@ The vast majority of numeric parameters,
 for example,
 are most often specified as probability distributions;
 an ensemble's maximum firing rate defaults to
-a uniform distribution between 200 and 400 Hz,
+a uniform distribution,
 but this could be set to a Gaussian distribution
 or a discrete set of options and associated
 probabilities.
@@ -271,15 +281,15 @@ The purpose of \texttt{\_\_init\_\_} is to
 set up the low-level system
 that implements the high-level objects
 contained in the provided network.
-When parts of the model must be
-randomly sampled, the random factors
-should be identical when a network
 In the reference backend,
 this involves sampling from the distributions
 in all of the parameters of all objects,
 solving for decoding weights and connection weights,
 setting up data structures for probed data,
 and so on.
+When parts of the model are randomly sampled,
+the random factors should become deterministic
+when a network's seed is set.
 
 The second method is \texttt{run},
 which advances the simulation
@@ -343,17 +353,16 @@ are out of the scope of this paper.
 
 \subsection{Fuzzy testing}
 
-As of version 2.0.1, Nengo's test suite contains 618 tests.
-Some test are unit tests though; how many?
-In all, ??? can be considered ``functional'' tests,
-as they construct a model,
-build a simulator object (see previous sec???),
-run that object,
-and test that the output of that model
+As of version 2.0.1, Nengo's full test suite contains 618 tests.
+Many tests are unit tests
+that ensure the frontend API operates as we expect.
+212 tests construct a simulator instance,
+run the simulator, and test the output of that model
 (as exposed through \texttt{trange}
 and \texttt{data})
-matches the desired output,
-to a certain tolerance.
+and therefore can be considered ``functional'' tests.
+For the remainder of this paper,
+we will focus only on these 212 functional tests.
 
 Unlike traditional software testing,
 there can be significant variability
@@ -378,9 +387,8 @@ Each test must determine what
 ``well enough'' means for that particular network.
 While this introduces some subjectivity
 to these benchmarks,
-it is nearly impossible to create
-completely objective benchmarks.
-??? more or remove last bit
+we believe this is an acceptable consequence
+of the breadth of their application.
 
 Nengo's test suite employs the \texttt{pytest}
 testing framework \cite{???}.
@@ -484,7 +492,8 @@ allowing for comparisons
 between the two results saved
 with the \texttt{analytics} fixture.
 See Figure~\ref{???} for a
-concrete example of this.
+concrete example of using the
+\texttt{analytics\_data} fixture.
 
 \section{Methods}
 
@@ -535,13 +544,12 @@ as models must be built before being run.
 
 Unlike the compliance metric,
 accuracy and speed are only collected
-for tests that define an an accuracy metric
+for tests that define an accuracy metric
 (i.e., those that use the \texttt{analytics} fixture).
-In this study, we focus on four such tests,
-which we claim are all necessary components
-of large-scale cognitive brain models,
-though they are by no means a sufficient set
-for all complex cognitive behaviors.
+In this study, we focus on four such tests
+that address central functioning aspects
+of a wide variety of large-scale briain models
+(see \cite{NEF or SPA book or both?}).
 
 \paragraph{1. Communication channel chain.}
 In this model,
@@ -559,6 +567,8 @@ This model tests how
 robust each backend is to noise introduced
 by representing a vector space
 in the activity of spiking neurons.
+
+??? include code for this example, as an appendix?
 
 \paragraph{2. Two-dimensional product.}
 In this model,
@@ -654,11 +664,14 @@ using fast general purpose computing devices
 like GPUs and any optimizations available,
 at the cost of code readability.
 
-\paragraph{4. Neurogrid software (\texttt{nengo\_brainstorm}).}
-The Neurogrid backend is a software implementation
-of a potential neuromorphic chip being developed
-by Boahen et al. \cite{???}.
-It does not aim for speed;
+\paragraph{4. Brainstorm software (\texttt{nengo\_brainstorm}).}
+The Brainstorm backend is a software implementation
+of a new neuromorphic chip
+based partly on Neurogrid \cite{???}
+currently in development
+by the Brain in Silicon lab
+at Stanford University.
+The software backend does not aim for speed;
 instead, it attempts to emulate the hardware
 in order to test its applicability
 to large-scale neural models.
@@ -671,7 +684,7 @@ but will be much faster.
 The SpiNNaker backend targets
 the eponymous neuromorphic hardware
 developed by Furber et al. \cite{???}.
-In contrast to the Neurogrid backend,
+In contrast to the Brainstorm backend,
 this backend targets physical neuromorphic hardware,
 and therefore is concerned
 both with accuracy and speed.
@@ -695,10 +708,10 @@ the OpenCL backend has the highest compliance
 The distilled backend has lower compliance
 than OpenCL, which follows from its stated goal
 of being simple but not necessarily feature-rich.
-The Neurogrid backend is the least compliant,
+The Brainstorm backend is the least compliant,
 but it is still an early experimental test bed;
 this is not necessarily indicative of the
-final Neurogrid hardware backend being
+final Brainstorm hardware backend being
 less compliant than other backends.
 
 \subsection{Accuracy}
@@ -721,7 +734,7 @@ acceptable ranges for the two-dimensional product model.
 Figure~\ref{fig:03} gives accuracy results
 for the controlled oscillator model.
 The reference and OpenCL backends perform well here,
-as do the distilled and Neurogrid backends.
+as do the distilled and Brainstorm backends.
 The SpiNNaker backend performs well in most cases,
 but some instances of the model
 are significantly less accurate
@@ -751,7 +764,7 @@ has consistently fast builds.
 The OpenCL backend is also usually fast,
 but can be slow for certain types of networks
 (e.g., the chained communication channel model).
-The distilled and Neurogrid backends---which
+The distilled and Brainstorm backends---which
 have a very similar build process---become
 slow when dealing with moderately sized models
 (e.g., the basal ganglia sequence model,
@@ -759,7 +772,7 @@ which contains 4900 neurons).
 The SpiNNaker backend incurs an unavoidable cost
 in setting up the hardware,
 though it builds the largest model faster than
-the distilled and Neurogrid backends.
+the distilled and Brainstorm backends.
 
 The run time results are of the utmost importance
 when evaluating backends for different applications,
@@ -774,7 +787,7 @@ is to run in real-time even if it is possible to run faster.
 (??? Andrew is this true?)
 The most important result is for the largest model,
 the basal ganglia sequence.
-In this model, the distilled and Neurogrid backends
+In this model, the distilled and Brainstorm backends
 performed very poorly
 (though neither has speed as a primary goal).
 The reference backend also did not perform well,
@@ -815,7 +828,7 @@ or different from other backends
 (e.g., in the basal ganglia sequence model).
 
 Above and beyond the benchmarking results,
-however, we assert that the primary contribution
+however, we believe that the primary contribution
 of this study is to provide evidence that Nengo
 has a tested, stable, productive frontend
 that can target multiple backends,
@@ -823,7 +836,7 @@ and therefore provides a platform
 for benchmarking neuromorphic backends,
 and other neural simulators.
 While this is similar to the goal
-of similar projects, such a PyNN \cite{???},
+of other projects, such a PyNN \cite{???},
 Nengo is unique in focusing on large-scale simulations,
 rather than attempting to support
 detailed single-neuron models
@@ -840,7 +853,7 @@ with Nengo is less biased than
 hardware-specific benchmarks,
 because the purpose of Nengo is
 to make functionally interesting large-scale models.
-These models are typically build and tested
+These models are typically built and tested
 in the reference backend,
 leaving little opportunity to introduce
 hardware-specific optimizations
@@ -910,10 +923,13 @@ James for implementing most of OCL, Jan for product benchmark)
  Reference (\texttt{nengo}) & 212 & 100\% \\
  Distilled (\texttt{nengo\_distilled}) & 129 & 60.8\% \\
  OpenCL (\texttt{nengo\_ocl}) & 187 & 88.2\% \\
- Neurogrid (\texttt{nengo\_brainstorm}) & 107 & 50.4\% \\\botrule
+ Brainstorm (\texttt{nengo\_brainstorm}) & 107 & 50.4\% \\\botrule
 \end{tabular}}{}
 \end{table}
 
+% ??? figure out these colors!
+
+% ??? Add A B C etc labels to figures
 
 \begin{figure}[!ht]
 \begin{center}
@@ -1004,7 +1020,7 @@ James for implementing most of OCL, Jan for product benchmark)
          (Bottom) The aggregated accuracy results for each backend on the
          basal ganglia sequence model. The observed metric is the mean
          time to transition from one action to the next. The model is run
-         for four second, allowing for approximately 90 transitions, depending
+         for four seconds, allowing for approximately 90 transitions, depending
          on the transition time. The box shows the median and
          inter-quartile range, while the whiskers extend to 1.5 times the
          inter-quartile range; outliers are not shown.}
