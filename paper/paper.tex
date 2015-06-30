@@ -681,9 +681,9 @@ will also perform well,
 but will be much faster.
 
 \paragraph{5. SpiNNaker hardware (\texttt{nengo\_spinnaker}).}
-The SpiNNaker backend targets
-the eponymous neuromorphic hardware
-developed by Furber et al. \cite{???}.
+The SpiNNaker backend \cite{Mundy et al., 2015 in press}
+targets the eponymous neuromorphic hardware
+developed by Furber et al. \cite{10.1109/JPROC.2014.2304638}.
 In contrast to the Brainstorm backend,
 this backend targets physical neuromorphic hardware,
 and therefore is concerned
@@ -784,7 +784,7 @@ models, like the product and controlled oscillator models.
 SpiNNaker, on the other hand, is slower than other backends
 for these models, but only because its goal
 is to run in real-time even if it is possible to run faster.
-(??? Andrew is this true?)
+(??? confirmed: always runs at real time)
 The most important result is for the largest model,
 the basal ganglia sequence.
 In this model, the distilled and Brainstorm backends
@@ -797,6 +797,14 @@ four times slower than real-time.
 The best performance was seen by the SpiNNaker backend,
 however, which operated at around 1.5 times real-time
 on this moderately-sized model.
+
+??? For SpiNNaker, place and route is most costly part of
+preparing a sim, not necessarily interfacing with hardware
+
+??? Add something about overhead; calling ``run'' still
+results in writing data to the board. Actual simulation
+occurs in real-time for SpiNNaker; can safely interact
+with robotics, neuromorphic hardware, etc
 
 Despite the fast run times for
 the OpenCL and SpiNNaker backends,
@@ -821,11 +829,14 @@ performs slower than the reference backend
 (e.g., the product and controlled oscillator models)
 bear closer inspection to determine the source
 of the slowdown.
+
 Similarly, we should investigate
 the model instances in which the SpiNNaker backend
 is less accurate (e.g., in the controlled oscillator model)
 or different from other backends
 (e.g., in the basal ganglia sequence model).
+??? Product difference might be due to different saturation
+properties in SpiNNaker ???
 
 Above and beyond the benchmarking results,
 however, we believe that the primary contribution
@@ -927,6 +938,8 @@ James for implementing most of OCL, Jan for product benchmark)
 \end{tabular}}{}
 \end{table}
 
+% ??? Make color palette grey-scale friendly
+
 % ??? figure out these colors!
 
 % ??? Add A B C etc labels to figures
@@ -976,6 +989,10 @@ James for implementing most of OCL, Jan for product benchmark)
          inter-quartile range, while the whiskers extend to 1.5 times the
          inter-quartile range; outliers are not shown.}
 \end{figure}
+
+% ??? Remove left plot
+
+% ??? Make middle a stem plot
 
 \begin{figure}[!ht]
 \begin{center}
