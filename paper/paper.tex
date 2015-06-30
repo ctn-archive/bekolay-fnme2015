@@ -73,7 +73,7 @@ have been developed that can
 run Nengo models on diverse platforms,
 including neuromorphic hardware.
 Nengo's separation between frontend and backend,
-as well as its rigorous test suite,
+as well as its extensive test suite,
 provide standardized comparisons
 between different neuromorphic implementations
 with respect to functional performance.
@@ -145,8 +145,7 @@ to enable data collection while testing on arbitrary backends.
 Nengo has a strict separation between
 the frontend and backend.
 The frontend exposes a modelling interface
-that uses Python and NumPy \cite{???}
-to define models concisely.
+that uses Python to define models concisely.
 Backends are responsible for transforming
 those frontend objects into code that
 can be run on the target platform.
@@ -166,10 +165,25 @@ or other inter-process communication protocols.
 Nengo contains five frontend objects
 that validate and store symbolic information
 about the neural model to be simulated.
+All neural models defined with Nengo
+are built with these five building blocks,
+including Spaun, a model that performs
+eight cognitive tasks with 2.5 million neurons
+that use visual input to produce motor output
+\cite{spaun}.
+A backend only needs to be aware of these
+five objects to run Nengo models,
+and therefore run the benchmarks discussed in this paper.
 
 The primary abstraction in Nengo is the \textit{Ensemble},
-which is a group of neurons (or neuron-like functions)
-that collectively represent a time-varying vector of numbers.
+which is a group of neurons.
+The activity of these neurons
+forms a distributed representation of a numerical vector;
+for example, a group of 100 neurons might represent
+a three-dimensional vector,
+and as that vector changes,
+the pattern of neural activity
+will change accordingly.
 Two parameters are mandatory: the number of neurons,
 and the dimensionality of the vector being represented.
 There are several optional parameters that
@@ -180,18 +194,15 @@ maximum firing rates can be specified for each neuron,
 the type of neuron model can be specified,
 and so on.
 
-The \textit{Node} plays a similar role of representing
-time-varying vectors of numbers,
-but does so directly, without simulating a group of neurons.
-As such, the only mandatory parameter
-is what vector should be represented;
-this can be specified as a constant vector,
-or as a function of time.
-The \textit{Node} allows the model to
-interact with arbitrary code,
-which can simulate an environment,
-connect the model to a sensor or actuator,
-and so on.
+The \textit{Node} provides a structure for all
+non-neural aspects of a model.
+\textit{Nodes} can provide input to a system,
+collect output values,
+interface with physical sensors and motors,
+or provide any other computation needed in a mode.
+In the case of the benchmarks presented in this paper,
+\textit{Nodes} are used to provide input signals
+to \textit{Ensembles}.
 
 The \textit{Connection} connects two objects
 (e.g., \textit{Ensembles} or \textit{Nodes}) together.
@@ -329,9 +340,7 @@ and the probed data are values.
 
 These three methods and one attribute
 make up the public interface
-that Nengo tests expect from backends;
-it is an example
-of the adapter pattern \cite{???}. % Maybe lose?
+that Nengo tests expect from backends.
 While the existence of the methods
 and attribute are necessary
 for every Nengo model,
@@ -386,9 +395,12 @@ well enough.
 Each test must determine what
 ``well enough'' means for that particular network.
 While this introduces some subjectivity
-to these benchmarks,
+to testing,
 we believe this is an acceptable consequence
 of the breadth of their application.
+When adapting these functional tests for benchmarking,
+we record the actual accuracy rather than
+ensuring that it is within some tolerances.
 
 Nengo's test suite employs the \texttt{pytest}
 testing framework \cite{???}.
@@ -550,6 +562,16 @@ In this study, we focus on four such tests
 that address central functioning aspects
 of a wide variety of large-scale briain models
 (see \cite{NEF or SPA book or both?}).
+??? Each test has several parameters
+that can be varied
+in order to benchmark extreme cases
+(e.g., representing many dimensions
+with few neurons).
+We test each model with parameters
+typically used in large-scale models,
+but make these parameterized models
+available at \url{???github url}
+for those who want to explore extreme cases.
 
 \paragraph{1. Communication channel chain.}
 In this model,
@@ -570,6 +592,8 @@ in the activity of spiking neurons.
 
 ??? include code for this example, as an appendix?
 
+??? Also include appendix with version numbers used?
+
 \paragraph{2. Two-dimensional product.}
 In this model,
 the scalar product is computed
@@ -586,9 +610,9 @@ albeit a low-dimensional one.
 Despite the low dimensionality,
 two-dimensional products are frequently used
 in large-scale models;
-it is the primary operation used to
-bind semantic pointers, for example
-\cite{???}.
+it is the primary operation needed to support
+symbol-like processing using neuron-like elements,
+for example \cite{spaun or SPA book}.
 
 \paragraph{3. Controlled oscillator.}
 In this model,
@@ -610,17 +634,20 @@ which is required for many cognitive functions
 like working memory and motor control.
 
 \paragraph{4. Basal Ganglia sequence.}
-In this model, comprised of 4900 LIF neurons,
-a basal ganglia is created (as described in \cite{???})
-that runs through a fixed sequence of actions.
-Stewart et al. \cite{???} have showed that
-these simple action sequences should
-switch at a rate of ???.
-This model tests that each backend can
-build this basal ganglia model,
-which is commonly used for action selection,
-and that actions can be selected at the
-hypothesized rate.
+In this model, brain structures
+known collectively as the basal ganglia
+are contructed from 4900 LIF neurons,
+organized such that they iterate
+through a repeating set of actions.
+This model has been used to investigate
+action selection and learning \cite{stewart, bekolay}
+and the switching time between actions
+has been closely mapped to human decision making
+\cite{stewart 2010}.
+This benchmark tests the ability
+to construct this model,
+and evaluates the time needed
+to transition between actions.
 
 \subsection{Backends tested}
 
@@ -648,8 +675,8 @@ but does not aim to implement all of the features
 implemented by the reference backend,
 and omits some optimizations that obfuscate code.
 Therefore, the distilled backend is easier to read
-and suitable for learning about Nengo
-or as a starting point for new backends.
+and suitable for learning about Nengo,
+but is expected to be slower in terms of run time.
 
 \paragraph{3. OpenCL (\texttt{nengo\_ocl}).}
 The OpenCL backend uses the Open Computing Language
