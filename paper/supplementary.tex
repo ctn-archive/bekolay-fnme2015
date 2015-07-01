@@ -45,6 +45,25 @@
 
 \section{Supplementary Tables and Figures}
 
+\begin{table}[!ht]
+\textbf{\refstepcounter{table}\label{Tab:01} Supplementary Table \arabic{table}.}{
+  Software versions used for benchmarking.
+  The PyPI name is the unique identifier used for installing the Python package
+  through the Python Package Index (PyPI). Packages can be found by
+  visiting \url{https://pypi.python.org/pypi/<PyPI name>}.}
+
+\processtable{ }
+{\begin{tabular}{lcc}\toprule
+ Package & PyPI name & Version number\\\midrule
+ Nengo & \texttt{nengo} & Development version, commit \texttt{7d2d24145} \\
+ Distilled backend & \texttt{nengo\_distilled} & 0.1.0 \\
+ OpenCL backend & \texttt{nengo\_ocl} & 0.1.0 \\
+ Brainstorm backend & Not available on PyPI & Development version, commit \texttt{ac3cfa708} \\
+ SpiNNaker backend & \texttt{nengo\_spinnaker} & 0.2.3 \\
+ NumPy & \texttt{numpy} & 1.8.1 \\\botrule
+\end{tabular}}{}
+\end{table}
+
 \begin{figure}[!ht]
 \begin{center}
   \includegraphics[width=85mm]{fig7}

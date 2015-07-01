@@ -2,6 +2,10 @@
 
 \usepackage{url,lineno}
 \linenumbers
+\usepackage{inconsolata}
+\usepackage{listings}
+\lstset{language=Python}
+\lstset{basicstyle=\ttfamily,breaklines=true}
 
 \graphicspath{{../figures/}}
 
@@ -36,11 +40,29 @@
 
 \begin{abstract}
 
-  Abstract
+  Nengo is a software package for designing and simulating
+  large-scale neural models.
+  Nengo is architected such that the same Nengo model
+  can be simulated on any of several
+  Nengo backends with few to no modifications.
+  Backends translate a model to specific platforms,
+  which include GPUs and neuromorphic hardware.
+  Nengo also contains a large test suite
+  that can be run with any backend
+  and focuses primarily on functional performance.
+  We propose that Nengo's large test suite
+  can be used to benchmark neuromorphic hardware's
+  functional performance and speed simulating
+  in an efficient, unbiased, and future-proof manner.
+  We implement four benchmark models and show that
+  Nengo can collect several benchmark metrics
+  that identify situations in which
+  some backends perform differently
+  or significantly faster than others.
 
   \tiny
   % 5--8 keywords
-  \keyFont{ \section{Keywords:}  }
+  \keyFont{ \section{Keywords:} Nengo, benchmarking, neuromorphic hardware }
 \end{abstract}
 
 \section{Introduction}
@@ -101,49 +123,54 @@ continuous integration systems,
 it will continue to grow and be run frequently,
 rather than becoming obsolete in the future.
 
-???expand Other software that do similar things:
-many neural simulators exist, and have tests,
-but don't have the high-level API
-that Nengo has.
-On the other hand, some simulators
-have high-level APIs
-(Topographica?) but a) aren't functional
-and b) can't use diverse backends.
+Several Nengo backends exist or are in active development.
+In this paper, we will run benchmarks
+on five backends.
+The reference, distilled, and Brainstorm backends
+run on general purpose computers,
+and focus on aspects other than speed.
+The OpenCL backend aims to be a fast backend
+that still works on general purpose computers,
+but can also take advantage of
+graphical processing units (GPUs).
+The SpiNNaker backend uses
+SpiNNaker neuromorphic hardware to
+simulate models in real time
+for natural interaction with
+physical sensors and actuators.
 
-??? In the subsequent sections,
+In the subsequent sections,
 we detail the architecture of Nengo's
 frontend and backend,
 and describe what any backend
 is required to implement.
-We explain Nengo's testing framework,
-including descriptions of the testing fixtures
+We describe Nengo's testing framework,
+including explanations of the testing fixtures
 used to collect and visualize benchmarks.
-We then list the metrics that are collected
-in this paper,
-and the backends on which we collect metrics.
+We then list the metrics
+that are collected in this paper,
+and give further details on the backends benchmarked.
 Finally, we show and discuss
 the results of collecting those metrics
 for each backend.
 
-??? Name backends and give brief intro to them
-in intro. Can then refer to them in other sections.
-
 \section{Background}
 
-There are two key features of Nengo 2.0
+There are two key features of Nengo
+(starting from version 2.0)
 that enable rapid benchmarking of neuromorphic systems.
 The first is a decoupling of model creation and simulation,
 resulting in a platform independent frontend interface
 to any backend that implements a certain set of requirements.
 The second is a ``fuzzy'' test suite ensuring that
 Nengo can be used to create models that solve cognitive tasks.
-This test suite makes ample use of test fixtures
+The test suite makes ample use of test fixtures
 to enable data collection while testing on arbitrary backends.
 
 \subsection{Nengo architecture}
 
 Nengo has a strict separation between
-the frontend and backend.
+frontend and backend.
 The frontend exposes a modelling interface
 that uses Python to define models concisely.
 Backends are responsible for transforming
@@ -170,7 +197,7 @@ are built with these five building blocks,
 including Spaun, a model that performs
 eight cognitive tasks with 2.5 million neurons
 that use visual input to produce motor output
-\cite{spaun}.
+\cite{eliasmith2012}.
 A backend only needs to be aware of these
 five objects to run Nengo models,
 and therefore run the benchmarks discussed in this paper.
@@ -214,15 +241,15 @@ and one or more learning rules
 can optionally be specified,
 along with several other optional parameters.
 
-The \textit{Probe} denotes that a particular
+The \textit{Probe} provides the main mechanism
+for data collection during run time
+by denoting that a particular
 quantity in the simulation should be recorded
 at a particular rate.
 The object to be probed must be specified;
 the attribute of that object,
 a sampling rate, and a synapse model for filtering
 can optionally be specified.
-The \textit{Probe} provides the main mechanism
-for data collection during run time.
 
 An important distinction between typical
 parameters and those specified in Nengo
@@ -258,17 +285,19 @@ Aside from managing the random seed,
 the network is responsible for maintaining
 a network-specific set of default parameters
 for the four other objects.
-This results in much shorter and less error-prone
+This results in shorter and less error-prone
 model creation scripts.
 
 An example script showing how Nengo can
 express a functional network
-with ??? neurons and ??? connections
-(representing ??? connection weights)
-in ??? lines of code can be seen
-in Figure~\ref{???}.
+with 500 neurons and 6 connections
+(representing 50,000 connection weights
+and 100 direct current injection sites)
+in under 20 lines of code
+can be seen in Appendix~\ref{App:01}.
 
 \subsubsection{Backend requirements}
+\label{Sec:Backend}
 
 The role of the backend is to take
 a single network, which contains
@@ -341,30 +370,29 @@ and the probed data are values.
 These three methods and one attribute
 make up the public interface
 that Nengo tests expect from backends.
-While the existence of the methods
+While the existence of these methods
 and attribute are necessary
 for every Nengo model,
-they are not sufficient;
 backends are not required
 to implement all of the neuron models
 or advanced features that
 are available in all other backends.
 Backends are responsible for informing
-the user when model cannot be implemented
+the user when a model cannot be implemented
 on that backend.
-The compliance metric (see section ???)
-explicitly tracks the details of what
+The compliance metric (see Section~\ref{Sec:Metrics})
+explicitly tracks what
 types of models can be implemented
 by each backend.
 The details of how each backend
-implements high-level frontend model
+implements high-level frontend models
 are out of the scope of this paper.
 
 \subsection{Fuzzy testing}
 
 As of version 2.0.1, Nengo's full test suite contains 618 tests.
 Many tests are unit tests
-that ensure the frontend API operates as we expect.
+that ensure the frontend API operates as expected.
 212 tests construct a simulator instance,
 run the simulator, and test the output of that model
 (as exposed through \texttt{trange}
@@ -403,7 +431,7 @@ we record the actual accuracy rather than
 ensuring that it is within some tolerances.
 
 Nengo's test suite employs the \texttt{pytest}
-testing framework \cite{???}.
+testing framework \footnote{Available at \url{http://pytest.org/}.}.
 \texttt{pytest} enables
 expressive testing of pluggable components
 (such as backends)
@@ -417,7 +445,7 @@ to the function.
 This allows for boilerplate code
 to be specified once,
 and run for any test that might use it.
-The example script in Figure~\ref{???}
+The example script in Appendix~\ref{App:01}
 demonstrates how these fixtures
 look in test scripts.
 
@@ -454,7 +482,7 @@ that tests have good tolerances.
 
 \paragraph{\texttt{Simulator}}
 allows for tests to be run with multiple backends.
-As detailed in section ???,
+As detailed in Section~\ref{Sec:Backend},
 each backend must expose a simulator class
 that accepts a network.
 Every test uses this test fixture rather than
@@ -472,9 +500,9 @@ allow tests to save artifacts from test runs.
 These artifacts are how accuracy and speed metrics
 are collected, and how the figures
 in this paper are generated.
-The \texttt{plt} fixture exposes the Matplotlib \cite{???}
+The \texttt{plt} fixture exposes the Matplotlib \cite{hunter2007}
 \texttt{pyplot} interface to a test function.
-These functions can then analyze and plot
+Test functions can then analyze and plot
 the data generated in a simulation
 (exposed from a simulator's \texttt{data} attribute)
 to visualize the activity in a network.
@@ -503,7 +531,7 @@ test runs to a single test function,
 allowing for comparisons
 between the two results saved
 with the \texttt{analytics} fixture.
-See Figure~\ref{???} for a
+See Appendix~\ref{App:01} for a
 concrete example of using the
 \texttt{analytics\_data} fixture.
 
@@ -517,6 +545,7 @@ can be used to collect meaningful benchmarks
 for neural simulators and neuromorphic hardware.
 
 \subsection{Metrics collected}
+\label{Sec:Metrics}
 
 \paragraph{Compliance}
 is the number of tests that a particular backend
@@ -527,7 +556,7 @@ of how many features a particular backend supports,
 it does not take into account how commonly used
 a particular feature is;
 for this reason, a backend that has relatively
-low compliance can still be very useful
+low compliance can still be useful
 in many situations.
 
 \paragraph{Accuracy}
@@ -552,6 +581,22 @@ each backend spends building each model
 (i.e., the time spent in \texttt{\_\_init\_\_}),
 as models must be built before being run.
 
+It should be noted that
+during a \texttt{run} call,
+each backend incurs some overhead
+to manage the simulation in addition
+to actually moving the simulation forward.
+The amount of overhead depends
+on the backend; those on specific hardware platforms
+(like the SpiNNaker and OpenCL backends)
+are likely to incur more overhead
+than those on general purpose platforms.
+However, we include the overhead in
+our speed benchmarking because
+it is not possible to distinguish
+overhead from actual run time
+in a backend-agnostic way.
+
 \subsection{Test models}
 
 Unlike the compliance metric,
@@ -561,16 +606,16 @@ for tests that define an accuracy metric
 In this study, we focus on four such tests
 that address central functioning aspects
 of a wide variety of large-scale briain models
-(see \cite{NEF or SPA book or both?}).
-??? Each test has several parameters
+(see \cite{eliasmith2003a,eliasmith2013}).
+
+Each test has several parameters
 that can be varied
 in order to benchmark extreme cases
-(e.g., representing many dimensions
-with few neurons).
+(see Appendix~\ref{App:01} for examples).
 We test each model with parameters
 typically used in large-scale models,
 but make these parameterized models
-available at \url{???github url}
+available at \url{https://github.com/tbekolay/fnme2015}
 for those who want to explore extreme cases.
 
 \paragraph{1. Communication channel chain.}
@@ -590,10 +635,6 @@ robust each backend is to noise introduced
 by representing a vector space
 in the activity of spiking neurons.
 
-??? include code for this example, as an appendix?
-
-??? Also include appendix with version numbers used?
-
 \paragraph{2. Two-dimensional product.}
 In this model,
 the scalar product is computed
@@ -601,7 +642,7 @@ from a two-dimensional ensemble
 comprised of 100 LIF neurons.
 Since the product is nonlinear,
 we use a space-filling curve
-(the Hilbert curve \cite{???})
+(the Hilbert curve \cite{hilbert1891})
 as the input signal to ensure that
 we sample the entire two-dimensional space.
 This model tests each backend's
@@ -612,7 +653,7 @@ two-dimensional products are frequently used
 in large-scale models;
 it is the primary operation needed to support
 symbol-like processing using neuron-like elements,
-for example \cite{spaun or SPA book}.
+for example \cite{eliasmith2013}.
 
 \paragraph{3. Controlled oscillator.}
 In this model,
@@ -640,10 +681,10 @@ are contructed from 4900 LIF neurons,
 organized such that they iterate
 through a repeating set of actions.
 This model has been used to investigate
-action selection and learning \cite{stewart, bekolay}
+action selection and learning \cite{stewart2012a}
 and the switching time between actions
 has been closely mapped to human decision making
-\cite{stewart 2010}.
+\cite{stewart2010}.
 This benchmark tests the ability
 to construct this model,
 and evaluates the time needed
@@ -657,7 +698,7 @@ on five Nengo backends.
 \paragraph{1. Reference (\texttt{nengo}).}
 The reference backend is designed to run quickly
 on any general purpose computer
-by using NumPy \cite{???}
+by using NumPy \cite{vanderwalt2011}
 for fast vectorized computations.
 It is included with the \texttt{nengo} frontend
 as \texttt{nengo.Simulator}.
@@ -680,7 +721,7 @@ but is expected to be slower in terms of run time.
 
 \paragraph{3. OpenCL (\texttt{nengo\_ocl}).}
 The OpenCL backend uses the Open Computing Language
-(OpenCL; \cite{???})
+(OpenCL; \cite{stone2010})
 to run Nengo models on many different computing devices,
 including graphical processing units (GPUs),
 and field-programmable gate arrays (FPGAs).
@@ -694,10 +735,11 @@ at the cost of code readability.
 \paragraph{4. Brainstorm software (\texttt{nengo\_brainstorm}).}
 The Brainstorm backend is a software implementation
 of a new neuromorphic chip
-based partly on Neurogrid \cite{???}
+based partly on Neurogrid \cite{benjamin2014}
 currently in development
 by the Brain in Silicon lab
-at Stanford University.
+at Stanford University\footnote{
+  Some details available at \url{http://brainstorm.stanford.edu/projects/}.}.
 The software backend does not aim for speed;
 instead, it attempts to emulate the hardware
 in order to test its applicability
@@ -708,19 +750,31 @@ will also perform well,
 but will be much faster.
 
 \paragraph{5. SpiNNaker hardware (\texttt{nengo\_spinnaker}).}
-The SpiNNaker backend \cite{Mundy et al., 2015 in press}
+The SpiNNaker backend \cite{mundyinpress}
 targets the eponymous neuromorphic hardware
-developed by Furber et al. \cite{10.1109/JPROC.2014.2304638}.
+developed by \citeauthor{furber2014}.
 In contrast to the Brainstorm backend,
 this backend targets physical neuromorphic hardware,
 and therefore is concerned
 both with accuracy and speed.
 
-\subsection{Hardware used for running benchmarks}
+\subsection{Benchmarking environment}
 
-??? ask Xuan
+All benchmarks were run on a server
+running Debian unstable.
+The server was configured with
+two Intel Xeon E5-2650 CPUs
+clocked at 2.00GHz,
+four Nvidia Tesla C2075 GPUs,
+and 64 GB of RAM.
+A single 48-chip SpiNN-5 board
+was connected through
+a 1 GB ethernet port on
+the Supermicro X9DRG-QF motherboard.
 
-SpiNN-5 board
+The versions of software
+used for benchmarking can be found in
+Supplementary Table~1.
 
 \section{Results}
 
@@ -753,7 +807,7 @@ Figure~\ref{fig:02} gives accuracy results
 for the two-dimensional product model.
 In this case, while all of the backends
 perform well, the SpiNNaker backend
-performs significantly worse than the
+performs statistically worse than the
 other four backends.
 Its performance, however, is still well within
 acceptable ranges for the two-dimensional product model.
@@ -762,10 +816,11 @@ Figure~\ref{fig:03} gives accuracy results
 for the controlled oscillator model.
 The reference and OpenCL backends perform well here,
 as do the distilled and Brainstorm backends.
-The SpiNNaker backend performs well in most cases,
-but some instances of the model
-are significantly less accurate
-than the majority of instances.
+??? revisit with new results
+%% The SpiNNaker backend performs well in most cases,
+%% but some instances of the model
+%% are signifless accurate
+%% than the majority of instances.
 
 Figure~\ref{fig:04} gives accuracy results
 for the basal ganglia sequence model.
@@ -773,13 +828,15 @@ Again, all of the backends perform similarly,
 except for the SpiNNaker backend.
 All other backends have a transition time
 around 43 milliseconds, which matches
-the results from Stewart et al. 2010 \cite{???}
+the results from \citeauthor{stewart2010}
 for simple actions.
 The SpiNNaker backend has a transition time
 around 55 milliseconds, which is slower
 than the time reported by Stewart et al.
 for simple actions, but faster than the
 time reported for complex actions.
+??? Run again with passthrough nodes removed
+and make figure
 
 \subsection{Speed}
 
@@ -797,7 +854,9 @@ slow when dealing with moderately sized models
 (e.g., the basal ganglia sequence model,
 which contains 4900 neurons).
 The SpiNNaker backend incurs an unavoidable cost
-in setting up the hardware,
+in setting up the hardware
+(determining the placement of computational resources,
+and generating routes to connect resouces),
 though it builds the largest model faster than
 the distilled and Brainstorm backends.
 
@@ -809,9 +868,8 @@ perform adequately for the three smaller models.
 The OpenCL backend is significantly slower for small
 models, like the product and controlled oscillator models.
 SpiNNaker, on the other hand, is slower than other backends
-for these models, but only because its goal
+for these models, because its goal
 is to run in real-time even if it is possible to run faster.
-(??? confirmed: always runs at real time)
 The most important result is for the largest model,
 the basal ganglia sequence.
 In this model, the distilled and Brainstorm backends
@@ -824,25 +882,21 @@ four times slower than real-time.
 The best performance was seen by the SpiNNaker backend,
 however, which operated at around 1.5 times real-time
 on this moderately-sized model.
+Since the SpiNNaker board always runs at real-time,
+this means that around one-third of the time taken
+for the \texttt{run} call is overhead.
 
-??? For SpiNNaker, place and route is most costly part of
-preparing a sim, not necessarily interfacing with hardware
-
-??? Add something about overhead; calling ``run'' still
-results in writing data to the board. Actual simulation
-occurs in real-time for SpiNNaker; can safely interact
-with robotics, neuromorphic hardware, etc
-
-Despite the fast run times for
-the OpenCL and SpiNNaker backends,
-we also investigated the possibility
-that probes were slowing these backend down,
-since probes require moving data from
-their native platform (GPU or SpiNNaker board)
-to the CPU. However, we found that
+Other backends also incur overhead,
+especially when data is recorded
+through probes.
+We investigated the possibility
+that the overhead involved in probes
+dominated the actual run time for some backends.
+However, we found that
 removing probes from these models
-made almost no impact on their run time
-(see Figure~\ref{Fig:07}).
+made very little impact on
+the total time taken in a \texttt{run} call
+(see Supplementary Figure~1).
 
 \section{Discussion}
 
@@ -856,14 +910,10 @@ performs slower than the reference backend
 (e.g., the product and controlled oscillator models)
 bear closer inspection to determine the source
 of the slowdown.
-
 Similarly, we should investigate
 the model instances in which the SpiNNaker backend
-is less accurate (e.g., in the controlled oscillator model)
-or different from other backends
-(e.g., in the basal ganglia sequence model).
-??? Product difference might be due to different saturation
-properties in SpiNNaker ???
+differs from other backends
+in the product model.
 
 Above and beyond the benchmarking results,
 however, we believe that the primary contribution
@@ -874,12 +924,18 @@ and therefore provides a platform
 for benchmarking neuromorphic backends,
 and other neural simulators.
 While this is similar to the goal
-of other projects, such a PyNN \cite{???},
-Nengo is unique in focusing on large-scale simulations,
+of other projects, most notably PyNN \cite{davison2008},
+Nengo is unique in focusing on
+large-scale functional simulations,
 rather than attempting to support
 detailed single-neuron models
-(though this capability is still possible in Nengo;
-see \cite{???}).
+(though this capability is still possible in Nengo).
+Topographica \cite{bednar2009} plays a similar role,
+in that it can interact with multiple neural simulators
+with a high-level API, but its API focuses specifically
+on models of topographic maps
+and other sensory pathways,
+rather than focusing on function and dynamics.
 
 While we cannot claim that Nengo
 solves all of complications that arise
@@ -921,7 +977,31 @@ the features that are used in a particular benchmark
 should not have to modify their own code
 to run those benchmarks on their own hardware.
 
-???concluding remarks
+In summary, we have implemented
+four benchmark models using the same
+testing framework used for Nengo's test suite,
+and gathered benchmark results
+for five backends,
+including an OpenCL backend that targets GPUs
+and a backend that targets
+SpiNNaker neuromorphic hardware.
+All five backends were able to implement
+the models accurately,
+with the OpenCL and SpiNNaker backends
+simulating the largest model much faster
+than the reference backend.
+We believe that the these benchmarks
+can be easily expanded upon
+to develop a suite of benchmarks
+that can be run by any neuromorphic hardware
+or neural simulator
+with an associated Nengo backend.
+Running these benchmarks in a common environment
+and cleanly visualizing the results
+could catalyze the development of
+neural systems that implement
+large-scale functional models
+efficiently and accurately.
 
 \subsection{Data Sharing}
 
@@ -1092,5 +1172,58 @@ James for implementing most of OCL, Jan for product benchmark)
          e.g., a value of two indicates that the model ran twice as slow
          as real time.}
 \end{figure}
+
+\clearpage
+\appendix
+
+\section{Chained communication channel model}
+\label{App:01}
+
+\begin{lstlisting}
+import numpy as np
+import nengo
+from nengo.utils.numpy import rmse
+
+def test_cchannelchain(Simulator, analytics, plt, rng, seed):
+    # Parameters that can be varied to investigate extreme cases
+    dims = 2
+    layers = 5
+    n_neurons = 100
+    synapse = nengo.Lowpass(0.01)
+
+    with nengo.Network(seed=seed) as model:
+        hypersphere = nengo.dists.UniformHypersphere()
+        value = hypersphere.sample(dims, 1, rng=rng).ravel()
+        stim = nengo.Node(value)
+
+        ens = [nengo.Ensemble(n_neurons, dimensions=dims)
+               for _ in range(layers)]
+
+        nengo.Connection(stim, ens[0])
+        for i in range(layers - 1):
+            nengo.Connection(ens[i], ens[i+1], synapse=synapse)
+
+        p_input = nengo.Probe(stim)
+        p_outputs = [nengo.Probe(ens[i], synapse=synapse)
+                     for i in range(layers)]
+
+    sim = Simulator(model)
+    sim.run(0.5)
+
+    for p_output in p_outputs:
+        plt.plot(sim.trange(), sim.data[p_output])
+    plt.plot(sim.trange(), sim.data[p_input], color='k', linewidth=1)
+    plt.ylabel('Decoded output')
+    plt.xlabel('Time (s)')
+
+    last = p_outputs[-1]
+    decoding_rmse = rmse(value, sim.data[last][sim.trange() > 0.4]
+    analytics.add_data('rmse', decoding_rmse)
+
+def test_compare_cchannelchain(analytics_data, plt):
+    rmses = [d['rmse'] for d in analytics_data]
+    plt.bar(np.arange(len(rmses)), rmses, align='center')
+    plt.ylabel("RMSE")
+\end{lstlisting}
 
 \end{document}
