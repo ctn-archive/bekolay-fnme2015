@@ -881,7 +881,7 @@ The OpenCL backend performed well, operating at around
 four times slower than real-time.
 The best performance was seen by the SpiNNaker backend,
 however, which operated at around 1.5 times real-time
-on this moderately-sized model.
+on this moderately-sized model. (??? revisit with new results)
 Since the SpiNNaker board always runs at real-time,
 this means that around one-third of the time taken
 for the \texttt{run} call is overhead.
@@ -901,9 +901,8 @@ the total time taken in a \texttt{run} call
 \section{Discussion}
 
 The most important finding from these benchmarks
-is that specialized hardware (including GPUs)
-can result in significantly faster run times
-for certain models,
+is that significant speedups can be gained by
+running models on specialized hardware and GPUs,
 with little to no cost in accuracy.
 The conditions under which the OpenCL backend
 performs slower than the reference backend
@@ -911,9 +910,30 @@ performs slower than the reference backend
 bear closer inspection to determine the source
 of the slowdown.
 Similarly, we should investigate
-the model instances in which the SpiNNaker backend
-differs from other backends
-in the product model.
+the product model instances
+in which the SpiNNaker backend
+differs from other backends.
+
+It should be noted that although there are clear
+relative speed differences between backends,
+these models are very small---each would only
+be a small component of a larger model.
+Spaun, for example, includes multiple copies
+or larger versions of all four of the models
+benchmarked here.
+Additionally, we run them
+for very small amounts of time---the longest
+simulation runs for 10 simulated seconds.
+Real models run for longer amounts of time
+to gather data comparable to those gathered
+in neuroscientific experiments.
+However, we expect that the results
+would be similar, though exaggerated,
+in larger models run for longer amount of time.
+The distilled and brainstorms backends would
+perform slowly, the OpenCL backend should
+run faster than the reference backend,
+and SpiNNaker will continue to run at real-time.
 
 Above and beyond the benchmarking results,
 however, we believe that the primary contribution
@@ -1044,12 +1064,6 @@ James for implementing most of OCL, Jan for product benchmark)
  Brainstorm (\texttt{nengo\_brainstorm}) & 107 & 50.4\% \\\botrule
 \end{tabular}}{}
 \end{table}
-
-% ??? Make color palette grey-scale friendly
-
-% ??? figure out these colors!
-
-% ??? Add A B C etc labels to figures
 
 \begin{figure}[!ht]
 \begin{center}
