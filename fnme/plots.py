@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import svgutils.transform as sg
-from scipy import stats
+from mpl_toolkits.axes_grid1.inset_locator import mark_inset, zoomed_inset_axes
 
 root = os.path.dirname(__file__)
 plots_dir = os.path.realpath(os.path.join(root, os.pardir, 'plots'))
@@ -34,7 +34,7 @@ class RectElement(sg.FigureElement):
         sg.FigureElement.__init__(self, rect)
 
 
-def el(char, path, x, y, scale=1, offset=(10, 30)):
+def el(char, path, x, y, scale=1, offset=(4, 24)):
     toret = []
     if char is not None:
         toret.append(RectElement(x + offset[0], y + offset[1]))
@@ -44,11 +44,12 @@ def el(char, path, x, y, scale=1, offset=(10, 30)):
                                     size=24,
                                     weight='bold',
                                     font='Arial'))
-    if path.endswith(".svg"):
+    if path is not None and path.endswith(".svg"):
         svg = sg.fromfile(path)
         svg = svg.getroot()
         svg.moveto(str(x), str(y), scale)
-        return [svg] + toret
+        toret = [svg] + toret
+    return toret
 
 
 def svgfig(w, h):
@@ -59,32 +60,36 @@ def svgfig(w, h):
 
 def savefig(fig, out):
     svg_path = os.path.join(fig_dir, '%s.svg' % out)
-    pdf_path = os.path.join(fig_dir, '%s.pdf' % out)
-    # eps_path = os.path.join(fig_dir, '%s.eps' % out)
     fig.save(svg_path)
+    svg2other(out)
+
+
+def svg2other(out):
+    svg_path = os.path.join(fig_dir, '%s.svg' % out)
+    pdf_path = os.path.join(fig_dir, '%s.pdf' % out)
+    eps_path = os.path.join(fig_dir, '%s.eps' % out)
     subprocess.call([inkscape, '--export-pdf=%s' % pdf_path, svg_path])
-    # subprocess.call([inkscape, '--export-text-to-path',
-    #                  '--export-eps=%s' % eps_path, svg_path])
+    subprocess.call([inkscape, '--export-text-to-path',
+                     '--export-eps=%s' % eps_path, svg_path])
 
 
-def setup(figsize=None):
+def setup(figsize=None, palette_args=None):
     plt.close('all')
     sns.set_style("white")
     sns.set_style("ticks")
+    if palette_args is None:
+        palette_args = {"palette": "cubehelix_r", "n_colors": 6}
+    sns.set_palette(**palette_args)
     plt.figure(figsize=figsize)
 
 
-def prettify(despine=None, tight_layout=None):
-    despine = {} if despine is None else despine
-    tight_layout = {} if tight_layout is None else tight_layout
-    sns.despine(**despine)
-    plt.tight_layout(**tight_layout)
-
-
-def save(fname, ext="svg", probes=True, despine=None, tight_layout=None):
-    prettify(despine, tight_layout)
-    fname = fname if probes else "%s-np" % fname
-    plt.savefig(os.path.join(plots_dir, "%s.%s" % (fname, ext)))
+def save(fname, fig=False):
+    sns.despine()
+    plt.tight_layout()
+    if fig:
+        plt.savefig(os.path.join(fig_dir, "%s.svg" % fname))
+    else:
+        plt.savefig(os.path.join(plots_dir, "%s.svg" % fname))
 
 
 def get_data(task, key, separate_cols=True, probes=True):
@@ -113,13 +118,16 @@ def get_data(task, key, separate_cols=True, probes=True):
                 except:
                     print(path)
                     raise
-    return pd.DataFrame(data, columns=['Backend', key])
+    if separate_cols:
+        return pd.DataFrame(data)
+    else:
+        return pd.DataFrame(data, columns=['Backend', key])
 
 
 def plot_summary(task, key, probes=True, figsize=None, rotation=0):
     setup(figsize=figsize)
     data = get_data(task, key, probes=probes)
-    sns.boxplot(data, showfliers=False)
+    sns.boxplot(data=data, showfliers=False)
     plt.gca().set_xticklabels(data.columns, rotation=rotation)
 
 
@@ -132,8 +140,7 @@ def accuracy():
     plt.ylabel("RMSE")
     save("accuracy-2")
 
-    plot_summary("controlledoscillator", "score",
-                 figsize=(twocolumn * 0.66, 3.0), rotation=12)
+    plot_summary("controlledoscillator", "score", figsize=(onecolumn * 2, 4.0))
     plt.ylabel("FFT similarity")
     save("accuracy-3")
 
@@ -141,31 +148,36 @@ def accuracy():
     plt.ylabel("Mean transition time (s)")
     save("accuracy-4")
 
+    plot_summary("sequence_pruned", "timing_mean", figsize=(onecolumn * 2, 3.0))
+    plt.ylabel("Mean transition time (s)")
+    save("accuracy-4-pruned")
+
 
 def speed(probes=True):
-    d_args = {'separate_cols': False, 'probes': probes}
-    t1 = get_data("cchannelchain", "buildtime", **d_args)
-    t1['Model'] = "Chained channels"
-    t2 = get_data("product", "buildtime", **d_args)
-    t2['Model'] = "Product"
-    t3 = get_data("controlledoscillator", "buildtime", **d_args)
-    t3['Model'] = "Oscillator"
-    t4 = get_data("sequence", "buildtime", **d_args)
-    t4['Model'] = "BG sequence"
-    build = pd.concat((t1, t2, t3, t4))
+    # Only get build speed for probed data
+    if probes:
+        d_args = {'separate_cols': False, 'probes': probes}
+        t1 = get_data("cchannelchain", "buildtime", **d_args)
+        t1['Model'] = "Chained channels"
+        t2 = get_data("product", "buildtime", **d_args)
+        t2['Model'] = "Product"
+        t3 = get_data("controlledoscillator", "buildtime", **d_args)
+        t3['Model'] = "Oscillator"
+        t4 = get_data("sequence", "buildtime", **d_args)
+        t4['Model'] = "BG sequence"
+        build = pd.concat((t1, t2, t3, t4))
 
-    setup()
-    plt.subplot(1, 2, 1)
-    sns.factorplot('Model', 'buildtime', 'Backend', data=build,
-                   legend_out=False,
-                   x_order=["Chained channels",
-                            "Product",
-                            "Oscillator",
-                            "BG sequence"])
-    plt.gcf().set_size_inches(onecolumn * 2, 3.0)
-    plt.ylabel("Build time (s)")
-    plt.xlabel("")
-    save("fig5", probes=probes, ext='pdf')
+        setup(figsize=(onecolumn * 2, 3.0))
+        ax = plt.subplot(1, 1, 1)
+        sns.barplot(x='Model', y='buildtime', hue='Backend', data=build, ax=ax,
+                    order=["Chained channels",
+                           "Product",
+                           "Oscillator",
+                           "BG sequence"])
+        plt.ylabel("Build time (s)")
+        plt.xlabel("")
+        save("fig5", fig=True)
+        svg2other("fig5")
 
     d_args = {'separate_cols': False, 'probes': probes}
     t1 = get_data("cchannelchain", "runtime", **d_args)
@@ -182,18 +194,38 @@ def speed(probes=True):
     t4['Model'] = "BG sequence"
     run = pd.concat((t1, t2, t3, t4))
 
-    setup()
-    sns.factorplot('Model', 'runtime', 'Backend', data=run,
-                   legend_out=False, x_order=["Chained channels",
-                                              "Product",
-                                              "Oscillator",
-                                              "BG sequence"])
-    plt.gcf().set_size_inches(onecolumn * 2, 3.0)
+    setup(figsize=(onecolumn * 2, 3.0))
+    ax = plt.subplot(1, 1, 1)
+    sns.barplot(x='Model', y='runtime', hue='Backend', data=run, ax=ax,
+                order=["Chained channels",
+                       "Product",
+                       "Oscillator",
+                       "BG sequence"])
     plt.axhline(1.0, lw=1, c='k', ls=':')
     plt.ylim(top=8.0)
-    plt.ylabel("Real time / Run time")
+    plt.ylabel("Simulation time + overhead / Run time")
     plt.xlabel("")
-    save("fig6", probes=probes, ext='pdf')
+
+    inset = zoomed_inset_axes(plt.gca(), 0.22,
+                              bbox_to_anchor=(0.76, 0.98),
+                              bbox_transform=plt.gcf().transFigure)
+    sns.barplot(x='Model', y='runtime', hue='Backend', data=run, ax=inset,
+                order=["Chained channels",
+                       "Product",
+                       "Oscillator",
+                       "BG sequence"])
+    plt.legend([])
+    plt.ylabel("")
+    plt.xlabel("")
+    plt.xticks(())
+    plt.xlim(left=2.5)
+    pp, _, _ = mark_inset(ax, inset, loc1=3, loc2=4, fc="none", ec="0.5")
+    pp.set_visible(False)
+    sns.despine(bottom=True, ax=inset)
+
+    fname = "fig6" if probes else "fig7"
+    save(fname, fig=True)
+    svg2other(fname)
 
 
 def fig1():
@@ -201,8 +233,8 @@ def fig1():
     h = 3.9 * 72
 
     fig = svgfig(w, h * 2)
-    fig.append(el(None, 'plots/results-1.svg', 0, 0))
-    fig.append(el(None, 'plots/accuracy-1.svg', 0, h))
+    fig.append(el("A", 'plots/results-1.svg', 0, 0))
+    fig.append(el("B", 'plots/accuracy-1.svg', 0, h))
     savefig(fig, 'fig1')
 
 
@@ -211,18 +243,19 @@ def fig2():
     h = 3.9 * 72
 
     fig = svgfig(w, h * 2)
-    fig.append(el(None, 'plots/results-2.svg', 0, 0))
-    fig.append(el(None, 'plots/accuracy-2.svg', 0, h))
+    fig.append(el("A", 'plots/results-2.svg', 0, 0))
+    fig.append(el("B", None, 0, h * 0.42))
+    fig.append(el("C", 'plots/accuracy-2.svg', 0, h))
     savefig(fig, 'fig2')
 
 
 def fig3():
-    w = twocolumn * 2 * 72
-    h = 3.0 * 72
+    w = onecolumn * 2 * 72
+    h = 3.9 * 72
 
-    fig = svgfig(w, h)
-    fig.append(el(None, 'plots/results-3.svg', 0, 0))
-    fig.append(el(None, 'plots/accuracy-3.svg', twocolumn * 1.33 * 72, 0))
+    fig = svgfig(w, h * 2)
+    fig.append(el("A", 'plots/results-3.svg', 0, 0))
+    fig.append(el("B", 'plots/accuracy-3.svg', 0, h))
     savefig(fig, 'fig3')
 
 
@@ -231,6 +264,6 @@ def fig4():
     h = 2.9 * 72
 
     fig = svgfig(w, h * 2)
-    fig.append(el(None, 'plots/results-4.svg', 0, 0))
-    fig.append(el(None, 'plots/accuracy-4.svg', 0, h))
+    fig.append(el("A", 'plots/results-4.svg', 0, 0))
+    fig.append(el("B", 'plots/accuracy-4.svg', 0, h))
     savefig(fig, 'fig4')

@@ -72,6 +72,11 @@ def task_benchmarks():
 
 
 def task_plots():
+    yield {'name': 'models',
+           'actions': [CmdAction(
+               'py.test -p fnme.options --simulator nengo.Simulator '
+               '--seed 5 --plot plots --noprofile -- fnme/benchmarks.py',
+               cwd=root)]}
     yield {'name': 'accuracy',
            'actions': [(fnme.plots.accuracy,)]}
     yield {'name': 'speed',

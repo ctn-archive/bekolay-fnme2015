@@ -1,6 +1,7 @@
 """py.test stuff that runs the benchmarks."""
 
 import importlib
+import tempfile
 
 import pytest
 
@@ -55,6 +56,7 @@ def add_speed_profiling(Simulator):
 _Simulator = None
 outdir = None
 _probes = True
+_profile = True
 
 
 def pytest_configure(config):
@@ -62,7 +64,11 @@ def pytest_configure(config):
     if not config.getoption('simulator'):
         raise ValueError("Please provide a simulator to benchmark.")
     _Simulator = load_class(config.getoption('simulator')[0])
-    add_speed_profiling(_Simulator)
+
+    global profile
+    profile = config.getoption('noprofile')
+    if profile:
+        add_speed_profiling(_Simulator)
 
     if config.getoption('seed'):
         # Change up the seed to get new networks
@@ -96,18 +102,22 @@ def load_class(fully_qualified_name):
 def outfile(request, seed):
     path = os.path.join(outdir, "%s-%s.txt" % (
         request.function.__name__, nengo.tests.conftest.test_seed))
-    with open(path, 'w') as outf:
+    if profile:
+        outf = open(path, 'w')
         outf.write('{\n')
-    return path
+    else:
+        outf = tempfile.TemporaryFile()
+    return outf
 
 
 @pytest.fixture
 def Simulator(request, outfile):
     def save_profiling():
-        with open(outfile, 'a') as outf:
-            outf.write('"buildtime": %f,\n' % _Simulator.build_time)
-            outf.write('"runtime": %f\n}\n' % _Simulator.run_time)
+        outfile.write('"buildtime": %f,\n' % _Simulator.build_time)
+        outfile.write('"runtime": %f\n}\n' % _Simulator.run_time)
         del _Simulator.build_time
         del _Simulator.run_time
-    request.addfinalizer(save_profiling)
+    request.addfinalizer(outfile.close)
+    if profile:
+        request.addfinalizer(save_profiling)
     return _Simulator

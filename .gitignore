@@ -1,4 +1,5 @@
 .DS_Store
+figures/
 plots/
 presentation/scripts/nengo.simulator.*
 results/

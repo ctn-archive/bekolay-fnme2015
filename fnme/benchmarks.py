@@ -24,10 +24,11 @@ try:
 except ImportError:
     pass
 
-from .plots import setup, prettify, onecolumn, twocolumn
+from .plots import setup, onecolumn
 from .utils import HilbertCurve
 
-colors = sns.color_palette()
+colors = sns.color_palette("cubehelix", n_colors=6)
+
 
 # --- 1. Communication channel chain
 def test_cchannelchain(Simulator, plt, rng, seed, outfile, probes):
@@ -57,23 +58,29 @@ def test_cchannelchain(Simulator, plt, rng, seed, outfile, probes):
     sim.run(0.5)
 
     if probes:
-        setup(figsize=(onecolumn * 2, 4.0))
-        for i, p_output in enumerate(p_outputs):
-            plt.plot(sim.trange(), sim.data[p_output],
-                     c=colors[i % len(colors)])
-        plt.plot(sim.trange(), sim.data[p_input], c='k', lw=1)
-        plt.yticks((-0.6, 0, 0.6))
-        plt.xticks((0, 0.05, 0.1))
-        plt.ylabel('Decoded output')
-        plt.xlabel('Time (s)')
-        plt.saveas = 'results-1.svg'
+        if type(plt).__name__ != 'Mock':
+            setup(figsize=(onecolumn * 2, 4.0))
+            colors = sns.cubehelix_palette(5)
+            lines = []
+            for i, p_output in enumerate(p_outputs):
+                l = plt.plot(sim.trange(), sim.data[p_output],
+                             c=colors[i % len(colors)])
+                lines.append(l[0])
+            plt.legend(lines, ["Ensemble %d" % i for i in range(1, 6)], loc='best')
+            plt.plot(sim.trange(), sim.data[p_input], c='k', lw=1)
+            plt.xlim(right=0.12)
+            plt.yticks((-0.5, 0, 0.5))
+            plt.xticks((0, 0.05, 0.1))
+            plt.ylabel('Decoded output')
+            plt.xlabel('Time (s)')
+            sns.despine()
+            plt.saveas = 'results-1.svg'
 
-        with open(outfile, 'a') as outf:
-            outf.write('"n_neurons": %d,\n' % sum(
-                e.n_neurons for e in model.all_ensembles))
-            outf.write('"simtime": 0.5,\n')
-            outf.write('"rmse": %f,\n' % (
-                rmse(sim.data[p_outputs[-1]][sim.trange() > 0.4], value)))
+        outfile.write('"n_neurons": %d,\n' % sum(
+            e.n_neurons for e in model.all_ensembles))
+        outfile.write('"simtime": 0.5,\n')
+        outfile.write('"rmse": %f,\n' % (
+            rmse(sim.data[p_outputs[-1]][sim.trange() > 0.4], value)))
 
     if hasattr(sim, 'close'):
         sim.close()
@@ -101,7 +108,8 @@ def test_product(Simulator, plt, seed, outfile, probes):
         ens_direct = nengo.Node(output=lambda t, x: x[0] * x[1], size_in=2)
         nengo.Connection(stimulus, ens_direct)
         if probes:
-            probe_inp = nengo.Probe(product_net.product.ensembles[0])
+            probe_inp = nengo.Probe(
+                product_net.product.ensembles[0], synapse=0.005)
             probe_direct = nengo.Probe(ens_direct)
             probe_test = nengo.Probe(product_net.output, synapse=0.005)
 
@@ -119,24 +127,26 @@ def test_product(Simulator, plt, seed, outfile, probes):
 
         setup(figsize=(onecolumn * 2, 4.0))
         plt.subplot(2, 1, 1)
-        plt.plot(sim.trange()[after_wait], sim.data[probe_inp][after_wait])
+        y = sim.data[probe_inp][after_wait]
+        plt.plot(sim.trange()[after_wait], y[:, 0], c=colors[2])
+        plt.plot(sim.trange()[after_wait], y[:, 1], c=colors[3])
         plt.ylabel('Decoded input')
         plt.xlim(left=wait_duration, right=duration + wait_duration)
         plt.xticks(())
 
         plt.subplot(2, 1, 2)
-        plt.plot(sim.trange()[after_wait], actual, c=colors[2])
+        plt.plot(sim.trange()[after_wait], actual, c=colors[4])
         plt.plot(sim.trange()[after_wait], target, c='k', lw=1)
         plt.ylabel('Decoded product')
         plt.xlabel('Time (s)')
         plt.xlim(left=wait_duration, right=duration + wait_duration)
+        sns.despine()
         plt.saveas = 'results-2.svg'
 
-        with open(outfile, 'a') as outf:
-            outf.write('"n_neurons": %d,\n' % sum(
-                e.n_neurons for e in model.all_ensembles))
-            outf.write('"simtime": %f,\n' % (duration + wait_duration))
-            outf.write('"rmse": %f,\n' % (rmse(actual, target)))
+        outfile.write('"n_neurons": %d,\n' % sum(
+            e.n_neurons for e in model.all_ensembles))
+        outfile.write('"simtime": %f,\n' % (duration + wait_duration))
+        outfile.write('"rmse": %f,\n' % (rmse(actual, target)))
 
     if hasattr(sim, 'close'):
         sim.close()
@@ -180,6 +190,7 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile, probes):
         if 'spinnaker' in Simulator.__module__:
             nengo_spinnaker.add_spinnaker_params(model.config)
             model.config[kick].function_of_time = True
+            model.config[freq_control].function_of_time = True
 
     sim = Simulator(model)
     sim.run(len(stims) * T)
@@ -215,27 +226,29 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile, probes):
             score[i] = np.dot(fft[i] / np.linalg.norm(fft[i]),
                               ideal_fft[i] / np.linalg.norm(ideal_fft[i]))
 
-        with open(outfile, 'a') as outf:
-            outf.write('"n_neurons": %d,\n' % sum(
-                e.n_neurons for e in model.all_ensembles))
-            outf.write('"simtime": %f,\n' % (len(stims) * T))
-            outf.write('"score": %f,\n' % np.mean(score))
+        outfile.write('"n_neurons": %d,\n' % sum(
+            e.n_neurons for e in model.all_ensembles))
+        outfile.write('"simtime": %f,\n' % (len(stims) * T))
+        outfile.write('"score": %f,\n' % np.mean(score))
 
-        setup(figsize=(twocolumn * 1.33, 3.0))
-        plt.subplot(1, 2, 1)
-        plt.plot(np.arange(steps) * dt, data.T)
-        plt.xlabel('Time (s)')
-        plt.ylabel('Decoded value')
-
-        plt.subplot(1, 2, 2)
-        lines = plt.plot(np.fft.fftshift(freqs),
-                         np.fft.fftshift(fft, axes=1).T,
-                         drawstyle="steps-mid")
+        setup(figsize=(onecolumn * 2, 4.0))
+        lines = []
+        if type(plt).__name__ != 'Mock':
+            for i, y in enumerate(np.fft.fftshift(fft, axes=1)):
+                lines.append(plt.stem(np.fft.fftshift(freqs), y))
+                marker, stem, base = lines[-1]
+                marker.set_color(colors[i])
+                marker.set_markersize(10.0)
+                for s in stem:
+                    s.set_color(colors[i])
+                    s.set_linewidth(1.0)
+                base.set_visible(False)
         plt.xlim(-f_max * 2, f_max * 2)
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('Power of decoded value')
         plt.legend(lines, ['%gHz' % f for f in ideal_freqs],
                    loc='best', prop={'size': 8})
+        sns.despine()
         plt.saveas = 'results-3.svg'
 
     if hasattr(sim, 'close'):
@@ -249,7 +262,8 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile, probes):
 # item in the sequence to the next.  We compute both a mean and a standard
 # deviation for this timing measure.
 
-def test_sequence(Simulator, plt, seed, outfile, probes):
+
+def _test_sequence(Simulator, plt, seed, outfile, probes, prune_passthrough):
     dimensions = 32
     subdimensions = 16
     T = 4.0
@@ -258,6 +272,9 @@ def test_sequence(Simulator, plt, seed, outfile, probes):
     with spa.SPA() as model:
         model.state = spa.Memory(dimensions=dimensions,
                                  subdimensions=subdimensions)
+
+        out = nengo.Node(output=lambda t, x: x, size_in=dimensions)
+        nengo.Connection(model.state.state.output, out, synapse=None)
 
         seq_actions = ['dot(state,A%d) --> state=A%d' % (i, (i+1) % seq_length)
                        for i in range(seq_length)]
@@ -274,7 +291,7 @@ def test_sequence(Simulator, plt, seed, outfile, probes):
         model.input = spa.Input(state=stim_state)
 
         if probes:
-            p_state = nengo.Probe(model.state.state.output, synapse=0.01)
+            p_state = nengo.Probe(out, synapse=0.01)
 
         if 'spinnaker' in Simulator.__module__:
             nengo_spinnaker.add_spinnaker_params(model.config)
@@ -282,15 +299,27 @@ def test_sequence(Simulator, plt, seed, outfile, probes):
                 model.input.input_nodes['state']
             ].function_of_time = True
 
+    vocab = model.get_input_vocab('state')
+
+    if prune_passthrough:
+        objs, conns = nengo.utils.builder.remove_passthrough_nodes(
+            *nengo.utils.builder.objs_and_connections(model))
+        probes = model.probes[:]
+        model = nengo.Network()
+        model.connections.extend(conns)
+        model.ensembles.extend([
+            e for e in objs if isinstance(e, nengo.Ensemble)])
+        model.nodes.extend([
+            n for n in objs if isinstance(n, nengo.Node)])
+        model.probes.extend(probes)
+
     sim = Simulator(model)
     sim.run(T)
 
     if probes:
         t = sim.trange()
         data = sim.data[p_state]
-        vocab = model.get_input_vocab('state')
         ideal = np.array([vocab.parse('A%d' % i).v for i in range(seq_length)])
-
         dotp = np.dot(data, ideal.T)
 
         best = np.argmax(dotp, axis=1)
@@ -302,21 +331,35 @@ def test_sequence(Simulator, plt, seed, outfile, probes):
         mean = np.mean(delta_t)
         std = np.std(delta_t)
 
-        with open(outfile, 'a') as outf:
-            outf.write('"n_neurons": %d,\n' % sum(
-                e.n_neurons for e in model.all_ensembles))
-            outf.write('"simtime": %f,\n' % T)
-            outf.write('"timing_mean": %f,\n' % mean)
-            outf.write('"timing_std": %f,\n' % std)
+        outfile.write('"n_neurons": %d,\n' % sum(
+            e.n_neurons for e in model.all_ensembles))
+        outfile.write('"simtime": %f,\n' % T)
+        outfile.write('"timing_mean": %f,\n' % mean)
+        outfile.write('"timing_std": %f,\n' % std)
 
-        setup(figsize=(onecolumn * 2, 3.0))
+        setup(figsize=(onecolumn * 2, 3.0), palette_args={
+            'palette': "cubehelix", 'n_colors': 6})
         plt.plot(t[t < 1.0], dotp[t < 1.0])
         for transition in t[indexes[0]]:
             plt.axvline(transition, c='0.5', lw=1, ls=':')
-        plt.ylabel('Similarity to item (dot product)')
+        plt.ylabel('Similarity to item')
         plt.xlabel('Time (s)')
         plt.xlim(right=1.0)
-        plt.saveas = 'results-4.svg'
+        sns.despine()
+        if prune_passthrough:
+            plt.saveas = 'results-4.svg'
+        else:
+            plt.saveas = 'results-5.svg'
 
     if hasattr(sim, 'close'):
         sim.close()
+
+
+def test_sequence(Simulator, plt, seed, outfile, probes):
+    _test_sequence(Simulator, plt, seed, outfile, probes,
+                   prune_passthrough=False)
+
+
+def test_sequence_pruned(Simulator, plt, seed, outfile, probes):
+    _test_sequence(Simulator, plt, seed, outfile, probes,
+                   prune_passthrough=True)
