@@ -15,6 +15,7 @@ import numpy as np
 import seaborn as sns
 
 import nengo
+import nengo.utils.builder
 import nengo.spa as spa
 from nengo.utils.numpy import rmse
 from nengo.utils.functions import piecewise
@@ -66,7 +67,8 @@ def test_cchannelchain(Simulator, plt, rng, seed, outfile, probes):
                 l = plt.plot(sim.trange(), sim.data[p_output],
                              c=colors[i % len(colors)])
                 lines.append(l[0])
-            plt.legend(lines, ["Ensemble %d" % i for i in range(1, 6)], loc='best')
+            plt.legend(lines, ["Ensemble %d" % i for i in range(1, 6)],
+                       loc='best')
             plt.plot(sim.trange(), sim.data[p_input], c='k', lw=1)
             plt.xlim(right=0.12)
             plt.yticks((-0.5, 0, 0.5))
@@ -261,6 +263,47 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile, probes):
 # The value for the benchmark is a measure of the time taken to go from one
 # item in the sequence to the next.  We compute both a mean and a standard
 # deviation for this timing measure.
+def remove_passthrough_nodes(network):
+    m = nengo.Network()
+
+    conns = list(network.all_connections)
+    inputs, outputs = nengo.utils.builder.find_all_io(conns)
+
+    keep_nodes = []
+    for probe in network.all_probes:
+        if isinstance(probe.target, nengo.Node):
+            if probe.target.output is None:
+                keep_nodes.append(probe.target)
+
+    with m:
+        for ens in network.all_ensembles:
+            m.add(ens)
+        for node in network.all_nodes:
+            if node.output is None and node not in keep_nodes:
+                conns_in = inputs[node]
+                conns_out = outputs[node]
+                for c in conns_in:
+                    conns.remove(c)
+                    outputs[c.pre_obj].remove(c)
+                for c in conns_out:
+                    conns.remove(c)
+                    inputs[c.post_obj].remove(c)
+
+                for c_in in conns_in:
+                    for c_out in conns_out:
+                        c = nengo.utils.builder._create_replacement_connection(
+                            c_in, c_out)
+                        if c is not None:
+                            conns.append(c)
+                            outputs[c.pre_obj].append(c)
+                            inputs[c.post_obj].append(c)
+            else:
+                m.add(node)
+        for conn in conns:
+            m.add(conn)
+        for probe in network.all_probes:
+            m.add(probe)
+    return m
 
 
 def _test_sequence(Simulator, plt, seed, outfile, probes, prune_passthrough):
@@ -272,9 +315,6 @@ def _test_sequence(Simulator, plt, seed, outfile, probes, prune_passthrough):
     with spa.SPA() as model:
         model.state = spa.Memory(dimensions=dimensions,
                                  subdimensions=subdimensions)
-
-        out = nengo.Node(output=lambda t, x: x, size_in=dimensions)
-        nengo.Connection(model.state.state.output, out, synapse=None)
 
         seq_actions = ['dot(state,A%d) --> state=A%d' % (i, (i+1) % seq_length)
                        for i in range(seq_length)]
@@ -291,7 +331,7 @@ def _test_sequence(Simulator, plt, seed, outfile, probes, prune_passthrough):
         model.input = spa.Input(state=stim_state)
 
         if probes:
-            p_state = nengo.Probe(out, synapse=0.01)
+            p_state = nengo.Probe(model.state.state.output, synapse=0.01)
 
         if 'spinnaker' in Simulator.__module__:
             nengo_spinnaker.add_spinnaker_params(model.config)
@@ -302,16 +342,7 @@ def _test_sequence(Simulator, plt, seed, outfile, probes, prune_passthrough):
     vocab = model.get_input_vocab('state')
 
     if prune_passthrough:
-        objs, conns = nengo.utils.builder.remove_passthrough_nodes(
-            *nengo.utils.builder.objs_and_connections(model))
-        probes = model.probes[:]
-        model = nengo.Network()
-        model.connections.extend(conns)
-        model.ensembles.extend([
-            e for e in objs if isinstance(e, nengo.Ensemble)])
-        model.nodes.extend([
-            n for n in objs if isinstance(n, nengo.Node)])
-        model.probes.extend(probes)
+        model = remove_passthrough_nodes(model)
 
     sim = Simulator(model)
     sim.run(T)
