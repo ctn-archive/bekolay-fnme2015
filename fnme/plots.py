@@ -146,74 +146,74 @@ def accuracy():
 
     plot_summary("sequence", "timing_mean", figsize=(onecolumn * 2, 3.0))
     plt.ylabel("Mean transition time (s)")
+    plt.ylim(0.04, 0.06)
     save("accuracy-4")
 
     plot_summary("sequence_pruned", "timing_mean", figsize=(onecolumn * 2, 3.0))
     plt.ylabel("Mean transition time (s)")
+    plt.ylim(0.04, 0.06)
     save("accuracy-4-pruned")
 
 
 def speed(probes=True):
+    def get_all_data(key, d_args, scale_to_realtime=False):
+        t1 = get_data("cchannelchain", key, **d_args)
+        t1['Model'] = "Chained channels"
+        t2 = get_data("product", key, **d_args)
+        t2['Model'] = "Product"
+        t3 = get_data("controlledoscillator", key, **d_args)
+        t3['Model'] = "Oscillator"
+        t4 = get_data("sequence", key, **d_args)
+        t4['Model'] = "BG sequence"
+        t5 = get_data("sequence_pruned", key, **d_args)
+        t5['Model'] = "BG sequence *"
+        if scale_to_realtime:
+            t1[key] /= 0.5
+            t2[key] /= 5.5
+            t3[key] /= 10.0
+            t4[key] /= 4.0
+            t5[key] /= 4.0
+        return pd.concat((t1, t2, t3, t4, t5))
+
+    model_order = ["Chained channels",
+                   "Product",
+                   "Oscillator",
+                   "BG sequence",
+                   "BG sequence *"]
+
     # Only get build speed for probed data
     if probes:
-        d_args = {'separate_cols': False, 'probes': probes}
-        t1 = get_data("cchannelchain", "buildtime", **d_args)
-        t1['Model'] = "Chained channels"
-        t2 = get_data("product", "buildtime", **d_args)
-        t2['Model'] = "Product"
-        t3 = get_data("controlledoscillator", "buildtime", **d_args)
-        t3['Model'] = "Oscillator"
-        t4 = get_data("sequence", "buildtime", **d_args)
-        t4['Model'] = "BG sequence"
-        build = pd.concat((t1, t2, t3, t4))
+        build = get_all_data("buildtime",
+                             {'separate_cols': False, 'probes': probes})
 
         setup(figsize=(onecolumn * 2, 3.0))
         ax = plt.subplot(1, 1, 1)
-        sns.barplot(x='Model', y='buildtime', hue='Backend', data=build, ax=ax,
-                    order=["Chained channels",
-                           "Product",
-                           "Oscillator",
-                           "BG sequence"])
+        sns.barplot(x='Model', y='buildtime', hue='Backend',
+                    data=build, ax=ax, order=model_order)
         plt.ylabel("Build time (s)")
         plt.xlabel("")
         save("fig5", fig=True)
         svg2other("fig5")
 
-    d_args = {'separate_cols': False, 'probes': probes}
-    t1 = get_data("cchannelchain", "runtime", **d_args)
-    t1['runtime'] /= 0.5  # => times real time
-    t1['Model'] = "Chained channels"
-    t2 = get_data("product", "runtime", **d_args)
-    t2['runtime'] /= 5.5  # => times real time
-    t2['Model'] = "Product"
-    t3 = get_data("controlledoscillator", "runtime", **d_args)
-    t3['runtime'] /= 10.0  # => times real time
-    t3['Model'] = "Oscillator"
-    t4 = get_data("sequence", "runtime", **d_args)
-    t4['runtime'] /= 4.0  # => times real time
-    t4['Model'] = "BG sequence"
-    run = pd.concat((t1, t2, t3, t4))
+    run = get_all_data("runtime",
+                       {'separate_cols': False, 'probes': probes},
+                       scale_to_realtime=True)
 
     setup(figsize=(onecolumn * 2, 3.0))
     ax = plt.subplot(1, 1, 1)
-    sns.barplot(x='Model', y='runtime', hue='Backend', data=run, ax=ax,
-                order=["Chained channels",
-                       "Product",
-                       "Oscillator",
-                       "BG sequence"])
+    sns.barplot(x='Model', y='runtime', hue='Backend',
+                data=run, ax=ax, order=model_order)
     plt.axhline(1.0, lw=1, c='k', ls=':')
-    plt.ylim(top=8.0)
+    plt.ylim(top=7.0)
     plt.ylabel("Simulation time + overhead / Run time")
     plt.xlabel("")
 
-    inset = zoomed_inset_axes(plt.gca(), 0.22,
-                              bbox_to_anchor=(0.76, 0.98),
+    inset = zoomed_inset_axes(plt.gca(), 0.38,
+                              bbox_to_anchor=(0.6, 0.98),
                               bbox_transform=plt.gcf().transFigure)
-    sns.barplot(x='Model', y='runtime', hue='Backend', data=run, ax=inset,
-                order=["Chained channels",
-                       "Product",
-                       "Oscillator",
-                       "BG sequence"])
+    sns.barplot(x='Model', y='runtime', hue='Backend',
+                data=run, ax=inset, order=model_order)
+    plt.axhline(1.0, lw=1, c='k', ls=':')
     plt.legend([])
     plt.ylabel("")
     plt.xlabel("")
@@ -263,7 +263,8 @@ def fig4():
     w = onecolumn * 2 * 72
     h = 2.9 * 72
 
-    fig = svgfig(w, h * 2)
+    fig = svgfig(w, h * 3)
     fig.append(el("A", 'plots/results-4.svg', 0, 0))
     fig.append(el("B", 'plots/accuracy-4.svg', 0, h))
+    fig.append(el("C", 'plots/accuracy-4-pruned.svg', 0, h * 2))
     savefig(fig, 'fig4')

@@ -197,7 +197,7 @@ are built with these five building blocks,
 including Spaun, a model that performs
 eight cognitive tasks with 2.5 million neurons
 that use visual input to produce motor output
-\cite{eliasmith2012}.
+\citep{eliasmith2012}.
 A backend only needs to be aware of these
 five objects to run Nengo models,
 and therefore run the benchmarks discussed in this paper.
@@ -500,7 +500,7 @@ allow tests to save artifacts from test runs.
 These artifacts are how accuracy and speed metrics
 are collected, and how the figures
 in this paper are generated.
-The \texttt{plt} fixture exposes the Matplotlib \cite{hunter2007}
+The \texttt{plt} fixture exposes the Matplotlib \citep{hunter2007}
 \texttt{pyplot} interface to a test function.
 Test functions can then analyze and plot
 the data generated in a simulation
@@ -606,7 +606,7 @@ for tests that define an accuracy metric
 In this study, we focus on four such tests
 that address central functioning aspects
 of a wide variety of large-scale briain models
-(see \cite{eliasmith2003a,eliasmith2013}).
+(see \citealp{eliasmith2003a,eliasmith2013}).
 
 Each test has several parameters
 that can be varied
@@ -642,7 +642,7 @@ from a two-dimensional ensemble
 comprised of 100 LIF neurons.
 Since the product is nonlinear,
 we use a space-filling curve
-(the Hilbert curve \cite{hilbert1891})
+(the Hilbert curve; \citealp{hilbert1891})
 as the input signal to ensure that
 we sample the entire two-dimensional space.
 This model tests each backend's
@@ -653,7 +653,7 @@ two-dimensional products are frequently used
 in large-scale models;
 it is the primary operation needed to support
 symbol-like processing using neuron-like elements,
-for example \cite{eliasmith2013}.
+for example \citep{eliasmith2013}.
 
 \paragraph{3. Controlled oscillator.}
 In this model,
@@ -681,14 +681,35 @@ are contructed from 4900 LIF neurons,
 organized such that they iterate
 through a repeating set of actions.
 This model has been used to investigate
-action selection and learning \cite{stewart2012a}
+action selection and learning \citep{stewart2012a}
 and the switching time between actions
 has been closely mapped to human decision making
-\cite{stewart2010}.
+\citep{stewart2010}.
 This benchmark tests the ability
 to construct this model,
 and evaluates the time needed
 to transition between actions.
+
+We also test an alternate version
+of the basal ganglia sequence model
+in which some ``passthrough'' nodes
+are pruned from the model.
+Passthrough nodes are nodes
+that collect signals from several sources,
+and pass them to other objects unchanged.
+They act as hubs
+that group together related signals
+to reduce the number of connections
+that must be made to
+a group of related objects.
+Since they do no processing,
+they can be difficult to deal with
+for backends that are designed to
+simulate neurons quickly.
+The basal ganglia makes liberal use
+of passthrough nodes,
+so we also test a version of the model
+with most passthrough nodes removed.
 
 \subsection{Backends tested}
 
@@ -698,7 +719,7 @@ on five Nengo backends.
 \paragraph{1. Reference (\texttt{nengo}).}
 The reference backend is designed to run quickly
 on any general purpose computer
-by using NumPy \cite{vanderwalt2011}
+by using NumPy \citep{vanderwalt2011}
 for fast vectorized computations.
 It is included with the \texttt{nengo} frontend
 as \texttt{nengo.Simulator}.
@@ -721,7 +742,7 @@ but is expected to be slower in terms of run time.
 
 \paragraph{3. OpenCL (\texttt{nengo\_ocl}).}
 The OpenCL backend uses the Open Computing Language
-(OpenCL; \cite{stone2010})
+(OpenCL; \citealp{stone2010})
 to run Nengo models on many different computing devices,
 including graphical processing units (GPUs),
 and field-programmable gate arrays (FPGAs).
@@ -735,7 +756,7 @@ at the cost of code readability.
 \paragraph{4. Brainstorm software (\texttt{nengo\_brainstorm}).}
 The Brainstorm backend is a software implementation
 of a new neuromorphic chip
-based partly on Neurogrid \cite{benjamin2014}
+based partly on Neurogrid \citep{benjamin2014}
 currently in development
 by the Brain in Silicon lab
 at Stanford University\footnote{
@@ -750,9 +771,9 @@ will also perform well,
 but will be much faster.
 
 \paragraph{5. SpiNNaker hardware (\texttt{nengo\_spinnaker}).}
-The SpiNNaker backend \cite{mundyinpress}
+The SpiNNaker backend \citep{mundyinpress}
 targets the eponymous neuromorphic hardware
-developed by \citeauthor{furber2014}.
+developed by \citet{furber2014}.
 In contrast to the Brainstorm backend,
 this backend targets physical neuromorphic hardware,
 and therefore is concerned
@@ -807,8 +828,7 @@ Figure~\ref{fig:02} gives accuracy results
 for the two-dimensional product model.
 In this case, while all of the backends
 perform well, the SpiNNaker backend
-performs statistically worse than the
-other four backends.
+performs worse than the other four backends.
 Its performance, however, is still well within
 acceptable ranges for the two-dimensional product model.
 
@@ -816,27 +836,37 @@ Figure~\ref{fig:03} gives accuracy results
 for the controlled oscillator model.
 The reference and OpenCL backends perform well here,
 as do the distilled and Brainstorm backends.
-??? revisit with new results
-%% The SpiNNaker backend performs well in most cases,
-%% but some instances of the model
-%% are signifless accurate
-%% than the majority of instances.
+The median accuracy of the SpiNNaker is
+the same as the distilled and Brainstorm backends,
+but there are a high proportion of model instances
+with less accuracy than the median,
+as compared to other backends.
 
 Figure~\ref{fig:04} gives accuracy results
 for the basal ganglia sequence model.
-Again, all of the backends perform similarly,
+For the version of model with passthrough nodes,
+all of the backends perform similarly,
 except for the SpiNNaker backend.
 All other backends have a transition time
 around 43 milliseconds, which matches
-the results from \citeauthor{stewart2010}
+the results from \citet{stewart2010}
 for simple actions.
-The SpiNNaker backend has a transition time
-around 55 milliseconds, which is slower
+The SpiNNaker backend has a median transition time
+around 51 milliseconds, which is slower
 than the time reported by Stewart et al.
 for simple actions, but faster than the
-time reported for complex actions.
-??? Run again with passthrough nodes removed
-and make figure
+time reported for complex actions;
+its interquartile range
+is also significantly larger
+than that of other backends.
+However, its performance for
+the version of the model
+with far fewer passthrough nodes
+is a closer match to the other backends.
+Its median transition time
+is around 47 milliseconds,
+and its interquartile range
+is indistinguishable from the other backends.
 
 \subsection{Speed}
 
@@ -856,7 +886,7 @@ which contains 4900 neurons).
 The SpiNNaker backend incurs an unavoidable cost
 in setting up the hardware
 (determining the placement of computational resources,
-and generating routes to connect resouces),
+and generating routes to connect resources),
 though it builds the largest model faster than
 the distilled and Brainstorm backends.
 
@@ -876,14 +906,14 @@ In this model, the distilled and Brainstorm backends
 performed very poorly
 (though neither has speed as a primary goal).
 The reference backend also did not perform well,
-operating at nearly eight times slower than real-time.
+operating at nearly six times slower than real-time.
 The OpenCL backend performed well, operating at around
-four times slower than real-time.
+three times slower than real-time.
 The best performance was seen by the SpiNNaker backend,
-however, which operated at around 1.5 times real-time
-on this moderately-sized model. (??? revisit with new results)
+however, which operated at around 1.2 times real-time
+(including overhead) on this moderately-sized model.
 Since the SpiNNaker board always runs at real-time,
-this means that around one-third of the time taken
+this means that around one-sixth of the time taken
 for the \texttt{run} call is overhead.
 
 Other backends also incur overhead,
@@ -928,9 +958,9 @@ Real models run for longer amounts of time
 to gather data comparable to those gathered
 in neuroscientific experiments.
 However, we expect that the results
-would be similar, though exaggerated,
+would be similar
 in larger models run for longer amount of time.
-The distilled and brainstorms backends would
+The distilled and brainstorms backends should
 perform slowly, the OpenCL backend should
 run faster than the reference backend,
 and SpiNNaker will continue to run at real-time.
@@ -944,13 +974,13 @@ and therefore provides a platform
 for benchmarking neuromorphic backends,
 and other neural simulators.
 While this is similar to the goal
-of other projects, most notably PyNN \cite{davison2008},
+of other projects, most notably PyNN \citep{davison2008},
 Nengo is unique in focusing on
 large-scale functional simulations,
 rather than attempting to support
 detailed single-neuron models
 (though this capability is still possible in Nengo).
-Topographica \cite{bednar2009} plays a similar role,
+Topographica \citep{bednar2009} plays a similar role,
 in that it can interact with multiple neural simulators
 with a high-level API, but its API focuses specifically
 on models of topographic maps
@@ -1025,26 +1055,71 @@ efficiently and accurately.
 
 \subsection{Data Sharing}
 
-???put results.zip on figshare
-
-???link to Github
+All of the software packages discussed in this paper
+are available online,
+except for the Brainstorm backend,
+which has not yet been publicly released
+(see Supplementary Table~1).
+All of the benchmarks presented here,
+as well as the scripts used to generate
+the presented figures,
+are available at
+\url{https://github.com/ctn-archive/bekolay-fnme2015}.
+The results of running the benchmarks
+are not included in the repository;
+however, they can be downloaded separately at
+\url{}
+to replicate the figures in this paper.
 
 \section*{Disclosure/Conflict-of-Interest Statement}
 
-???probably something about ABR here?
+The authors of this paper
+are three of the seven co-founders
+of Applied Brain Research (ABR),
+who are the sole copyright holders
+of Nengo and the distilled backend.
+While ABR reserves the right
+to commercialize Nengo,
+it is freely available
+for all non-commercial purposes.
+As of the writing of this paper,
+ABR has not sold any licenses to Nengo,
+but has used it
+for other revenue-generating projects.
 
 \section*{Author Contributions}
 
-???todo
+TB adapted the models for benchmarking,
+ran the benchmarks,
+wrote the text of the paper,
+and prepared all of the figures.
+TCS wrote initial versions of the benchmark models
+and edited text.
+CE oversaw all research activities,
+and edited text.
 
 \section*{Acknowledgments}
 
-???todo
-(Andrew Mundy for SpiNNaker help, feedback on first draft,
-Xuan for GPU server, Eric for help in getting OCL benchmarks running,
-James for implementing most of OCL, Jan for product benchmark)
+We thank Andrew Mundy for his help
+running the SpiNNaker backend
+and providing feedback on drafts of this paper.
+We thank Jan Gosmann for the initial version
+of the product benchmark models,
+and for conceptualization and implementation
+of the \texttt{analytics} and \texttt{analytics\_data}
+fixtures.
+We thank Xuan Choo for administering
+the server on which the benchmarks were run,
+Eric Hunsberger for help in running
+the benchmarks on the OpenCL backend,
+and James Bergstra for
+implementing most of the OpenCL backend.
 
-\paragraph{Funding\textcolon} %% Funding
+\paragraph{Funding\textcolon}
+NSERC Discovery,
+NSERC Graduate Fellowships,
+ONR (N000141310419)
+and AFOSR (FA8655-13-1-3084). ??? Chris, can you confirm?
 
 \bibliographystyle{frontiersinSCNS}
 \bibliography{paper}
@@ -1059,8 +1134,8 @@ James for implementing most of OCL, Jan for product benchmark)
 {\begin{tabular}{lcc}\toprule
  Backend & Number of tests passed & Percentage of tests passed\\\midrule
  Reference (\texttt{nengo}) & 212 & 100\% \\
- Distilled (\texttt{nengo\_distilled}) & 129 & 60.8\% \\
  OpenCL (\texttt{nengo\_ocl}) & 187 & 88.2\% \\
+ Distilled (\texttt{nengo\_distilled}) & 129 & 60.8\% \\
  Brainstorm (\texttt{nengo\_brainstorm}) & 107 & 50.4\% \\\botrule
 \end{tabular}}{}
 \end{table}
@@ -1070,14 +1145,14 @@ James for implementing most of OCL, Jan for product benchmark)
   \includegraphics[width=85mm]{fig1}
 \end{center}
 \textbf{\refstepcounter{figure}\label{fig:01} Figure \arabic{figure}.}
-       {Chained communication channel model. (Top) One example instance
+       {Chained communication channel model. (A) One example instance
          of the model run on the reference backend; the decoded output
          of the five chained two-dimensional ensembles during the first
          12 milliseconds of the simulation are shown.
-         Each ensemble reaches approximately the correct value of
-         $[-0.6, 0.6]$ (indicated with the solid black line)
+         Each ensemble reaches approximately the correct value
+         (indicated with the solid black line)
          but with slight delays depending on their position in the chain.
-         (Bottom) The aggregated accuracy results for each backend on the
+         (B) The aggregated accuracy results for each backend on the
          chained communication channel model. The observed metric is the root
          mean-squared error (RMSE) between the decoded output of the last
          ensemble in the chain and the correct value (which is randomly
@@ -1092,15 +1167,15 @@ James for implementing most of OCL, Jan for product benchmark)
   \includegraphics[width=85mm]{fig2}
 \end{center}
 \textbf{\refstepcounter{figure}\label{fig:02} Figure \arabic{figure}.}
-       {Two-dimensional product model. (Top) One example instance of the model
+       {Two-dimensional product model. (A) One example instance of the model
          run on the reference backend; the decoded input represented
          by the two-dimensional ensemble is shown. The input signal is
          designed to fully explore the two-dimensional vector space
          in the range $[-1, 1]$.
-         (Middle) The decoded product represented by an ensemble downstream
+         (B) The decoded product represented by an ensemble downstream
          of the ensemble representing the input. It closely matches the
          correct product (indicated with the solid black line).
-         (Bottom) The aggregated accuracy results for each backend on the
+         (C) The aggregated accuracy results for each backend on the
          two-dimensional product model. The measured metric is the root
          mean-squared error (RMSE) between the decoded output of the ensemble
          representing the product and the correct product, during the whole
@@ -1111,26 +1186,18 @@ James for implementing most of OCL, Jan for product benchmark)
          inter-quartile range; outliers are not shown.}
 \end{figure}
 
-% ??? Remove left plot
-
-% ??? Make middle a stem plot
-
 \begin{figure}[!ht]
 \begin{center}
-  \includegraphics[width=180mm]{fig3}
+  \includegraphics[width=85mm]{fig3}
 \end{center}
 \textbf{\refstepcounter{figure}\label{fig:03} Figure \arabic{figure}.}
-       {Controlled two-dimensional oscillator model. (Left) One example
-         instance of the model run on the reference backend; the decoded
-         value represented by one of the two dimensions in the oscillatory
-         ensemble is shown. The control signal dictating the frequency of
-         oscillation changes every two seconds; in this plot each two second
-         period is overlaid. Each signal oscillates at approximately the
-         correct frequency (see middle for legend).
-         (Middle) The power spectrum of each two second period.
+       {Controlled two-dimensional oscillator model. (A) One example
+         instance of the model run on the reference backend;
+         the power spectrum is shown for each two second period,
+         colored to indicate the target frequency given by the control signal.
          High power is seen only at the frequency we attempt to induce,
          for each of the five test frequencies.
-         (Right) The aggregated accuracy results for each backend on the
+         (B) The aggregated accuracy results for each backend on the
          two-dimensional product model. The measured metric is the similarity
          between the power spectrum (calculated using the Fast Fourier
          Transform or FFT) of the decoded output of one of the two oscillatory
@@ -1147,7 +1214,7 @@ James for implementing most of OCL, Jan for product benchmark)
   \includegraphics[width=85mm]{fig4}
 \end{center}
 \textbf{\refstepcounter{figure}\label{fig:04} Figure \arabic{figure}.}
-       {Basal Ganglia sequence model. (Top) One example instance
+       {Basal Ganglia sequence model. (A) One example instance
          of the model run on the reference backend; the similarity between
          the current representation in working memory and the six possible
          actions is shown (note that in the full benchmark, ten items are
@@ -1155,13 +1222,17 @@ James for implementing most of OCL, Jan for product benchmark)
          cycling back at the end of the six items. The point at which the
          model switches from selecting one action to another action
          (the transition times) are indicated with dashed grey lines.
-         (Bottom) The aggregated accuracy results for each backend on the
-         basal ganglia sequence model. The observed metric is the mean
+         (B) The aggregated accuracy results for each backend on the
+         basal ganglia sequence model, with all passthrough nodes included.
+         The observed metric is the mean
          time to transition from one action to the next. The model is run
          for four seconds, allowing for approximately 90 transitions, depending
          on the transition time. The box shows the median and
          inter-quartile range, while the whiskers extend to 1.5 times the
-         inter-quartile range; outliers are not shown.}
+         inter-quartile range; outliers are not shown.
+         (C) The aggregated accuracy results for each backend on the
+         basal ganglia sequence model, with most passthrough nodes pruned.
+         Lines has the same meaning as in B.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1170,8 +1241,8 @@ James for implementing most of OCL, Jan for product benchmark)
 \end{center}
 \textbf{\refstepcounter{figure}\label{fig:05} Figure \arabic{figure}.}
        {Build time for each model on each backend. Each bar represents
-         the mean build time across 150 instances of each model;
-         error bars are 95\% confidence intervals.}
+         the mean build time across 50 instances of each model;
+         error bars are bootstrapped 95\% confidence intervals.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1179,12 +1250,15 @@ James for implementing most of OCL, Jan for product benchmark)
   \includegraphics[width=85mm]{fig6}
 \end{center}
 \textbf{\refstepcounter{figure}\label{fig:06} Figure \arabic{figure}.}
-       {Run time for each model on each backend. Each bar represents
-         the mean run time across 150 instances of each model;
-         error bars are 95\% confidence intervals.
-         Run time is measured relative to real time;
-         e.g., a value of two indicates that the model ran twice as slow
-         as real time.}
+       {Run speed for each model on each backend. Each bar represents
+         the mean run speed across 50 instances of each model;
+         error bars are bootstrapped 95\% confidence intervals.
+         Run speed is measured as the simulation time plus overhead,
+         relative to real time; e.g., a value of two indicates that
+         the calling \texttt{run} for a number of seconds takes
+         the model two times that number of real seconds to complete the
+         \texttt{run} call.}
+
 \end{figure}
 
 \clearpage

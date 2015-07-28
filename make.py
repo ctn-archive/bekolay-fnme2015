@@ -25,12 +25,19 @@ def task_reset():
 
 def task_paper():
     d = os.path.join(root, 'paper')
-    yield {'name': 'main',
-           'actions': [CmdAction('rubber --pdf paper.tex', cwd=d)],
-           'targets': [os.path.join(d, 'paper.pdf')]}
-    yield {'name': 'supplementary',
-           'actions': [CmdAction('rubber --pdf supplementary.tex', cwd=d)],
-           'targets': [os.path.join(d, 'supplementary.pdf')]}
+
+    def forsurecompile(fname, bibtex=True):
+        pdf = CmdAction('pdflatex %s.tex' % fname, cwd=d)
+        bib = CmdAction('bibtex %s' % fname, cwd=d)
+        pdf_file = os.path.join(d, '%s.pdf' % fname)
+        tex_file = os.path.join(d, '%s.tex' % fname)
+        bib_file = os.path.join(d, '%s.bib' % fname)
+        return {'name': fname,
+                'file_dep': [tex_file, bib_file] if bibtex else [tex_file],
+                'actions': [pdf, bib, pdf, pdf] if bibtex else [pdf, pdf],
+                'targets': [pdf_file]}
+    yield forsurecompile('paper')
+    yield forsurecompile('supplementary', bibtex=False)
 
 
 def task_compliance():
@@ -71,7 +78,7 @@ def task_benchmarks():
                         'help': 'Additional flags to pass onto py.test'}]}
 
 
-def task_plots():
+def task_figures():
     yield {'name': 'models',
            'actions': [CmdAction(
                'py.test -p fnme.options --simulator nengo.Simulator '
@@ -83,17 +90,11 @@ def task_plots():
            'actions': [(fnme.plots.speed, (True,))]}
     yield {'name': 'speed-np',
            'actions': [(fnme.plots.speed, (False,))]}
-
-
-def task_combine():
-    yield {'name': 'fig1',
-           'actions': [(fnme.plots.fig1,)]}
-    yield {'name': 'fig2',
-           'actions': [(fnme.plots.fig2,)]}
-    yield {'name': 'fig3',
-           'actions': [(fnme.plots.fig3,)]}
-    yield {'name': 'fig4',
-           'actions': [(fnme.plots.fig4,)]}
+    yield {'name': 'combine',
+           'actions': [(fnme.plots.fig1,),
+                       (fnme.plots.fig2,),
+                       (fnme.plots.fig3,),
+                       (fnme.plots.fig4,)]}
 
 
 if __name__ == '__main__':
