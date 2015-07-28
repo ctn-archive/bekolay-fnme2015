@@ -933,12 +933,19 @@ Since the SpiNNaker board always runs at real-time,
 this means that around one-sixth of the time taken
 for the \texttt{run} call is overhead.
 
+Interestingly, while removing passthrough nodes
+results in significantly slower run times
+for the reference backend,
+it speeds up the OpenCL and SpiNNaker backends slightly.
+This result indicates that passthrough nodes
+add to the overhead incurred by
+SpiNNaker and OpenCL.
 Other backends also incur overhead,
 especially when data is recorded
 through probes.
 We investigated the possibility
 that the overhead involved in probes
-dominated the actual run time for some backends.
+dominated the run time for some backends.
 However, we found that
 removing probes from these models
 made very little impact on
