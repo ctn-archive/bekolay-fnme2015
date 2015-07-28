@@ -27,7 +27,8 @@ def task_paper():
     d = os.path.join(root, 'paper')
 
     def forsurecompile(fname, bibtex=True):
-        pdf = CmdAction('pdflatex %s.tex' % fname, cwd=d)
+        pdf = CmdAction('pdflatex -interaction=nonstopmode %s.tex' % fname,
+                        cwd=d)
         bib = CmdAction('bibtex %s' % fname, cwd=d)
         pdf_file = os.path.join(d, '%s.pdf' % fname)
         tex_file = os.path.join(d, '%s.tex' % fname)

@@ -1,7 +1,10 @@
-%%% You will need to have the following packages installed: datetime, fmtcount, etoolbox, fcprefix, which are normally inlcuded in WinEdt. %%%
 \documentclass{frontiers_suppmat} % for all articles
 
 \usepackage{url}
+\usepackage{inconsolata}
+\usepackage{listings}
+\lstset{language=Python}
+\lstset{basicstyle=\ttfamily,breaklines=true}
 
 \graphicspath{{../figures/}}
 
@@ -9,17 +12,11 @@
 \def\keyFont{\fontsize{8}{11}\helveticabold }
 \def\firstAuthorLast{Bekolay {et~al.}}
 \def\Authors{Trevor Bekolay\,$^{1,*}$,
-  Terrence C. Stewart\,$^{1}$,
-  Eric Hunsberger\,$^1$,
-  Andrew Mundy\,$^2$ and
+  Terrence C. Stewart\,$^{1}$, and
   Chris Eliasmith\,$^1$}
 \def\Address{$^{1}$Centre for Theoretical Neuroscience,
   University of Waterloo,
-  Waterloo, ON, Canada\\
-  $^{2}$ Advanced Processors Technologies Research Group,
-  School of Computer Science,
-  University of Manchester,
-  Manchester, UK}
+  Waterloo, ON, Canada}
 \def\corrAuthor{Trevor Bekolay}
 \def\corrAddress{Centre for Theoretical Neuroscience,
   David R. Cheriton School of Computer Science,
@@ -27,8 +24,6 @@
   200 University Avenue West,
   Waterloo, ON  N2L~3G1, Canada}
 \def\corrEmail{tbekolay@uwaterloo.ca}
-
-% \color{FrontiersColor} Is the color used in the Journal name, in the title, and the names of the sections.
 
 \begin{document}
 \onecolumn
@@ -59,14 +54,14 @@
  Distilled backend & \texttt{nengo\_distilled} & 0.1.0 \\
  OpenCL backend & \texttt{nengo\_ocl} & 0.1.0 \\
  Brainstorm backend & Not available on PyPI & Development version, commit \texttt{ac3cfa708} \\
- SpiNNaker backend & \texttt{nengo\_spinnaker} & 0.2.3 \\
+ SpiNNaker backend & \texttt{nengo\_spinnaker} & 0.2.4 \\
  NumPy & \texttt{numpy} & 1.8.1 \\\botrule
 \end{tabular}}{}
 \end{table}
 
 \begin{figure}[!ht]
 \begin{center}
-  \includegraphics[width=85mm]{fig7}
+  \includegraphics[width=180mm]{fig7}
 \end{center}
 \textbf{\refstepcounter{figure}\label{fig:01} Supplementary Figure \arabic{figure}.}
        {Run time for each model with probes removed on each backend.
@@ -75,7 +70,60 @@
          error bars are 95\% confidence intervals.
          Run time is measured relative to real time;
          e.g., a value of two indicates that the model ran twice as slow
-         as real time.}
+         as real time.
+         BG Sequence * refers to the basal ganglia sequence model
+         in which passthrough nodes have been removed.}
+\end{figure}
+
+\begin{figure}[!ht]
+\begin{lstlisting}
+import numpy as np
+import nengo
+from nengo.utils.numpy import rmse
+
+def test_cchannelchain(Simulator, analytics, plt, rng, seed):
+    # Parameters that can be varied to investigate extreme cases
+    dims = 2
+    layers = 5
+    n_neurons = 100
+    synapse = nengo.Lowpass(0.01)
+
+    with nengo.Network(seed=seed) as model:
+        hypersphere = nengo.dists.UniformHypersphere()
+        value = hypersphere.sample(dims, 1, rng=rng).ravel()
+        stim = nengo.Node(value)
+
+        ens = [nengo.Ensemble(n_neurons, dimensions=dims)
+               for _ in range(layers)]
+
+        nengo.Connection(stim, ens[0])
+        for i in range(layers - 1):
+            nengo.Connection(ens[i], ens[i+1], synapse=synapse)
+
+        p_input = nengo.Probe(stim)
+        p_outputs = [nengo.Probe(ens[i], synapse=synapse)
+                     for i in range(layers)]
+
+    sim = Simulator(model)
+    sim.run(0.5)
+
+    for p_output in p_outputs:
+        plt.plot(sim.trange(), sim.data[p_output])
+    plt.plot(sim.trange(), sim.data[p_input], color='k', linewidth=1)
+    plt.ylabel('Decoded output')
+    plt.xlabel('Time (s)')
+
+    last = p_outputs[-1]
+    decoding_rmse = rmse(value, sim.data[last][sim.trange() > 0.4]
+    analytics.add_data('rmse', decoding_rmse)
+
+def test_compare_cchannelchain(analytics_data, plt):
+    rmses = [d['rmse'] for d in analytics_data]
+    plt.bar(np.arange(len(rmses)), rmses, align='center')
+    plt.ylabel("RMSE")
+\end{lstlisting}
+\textbf{\refstepcounter{figure}\label{fig:02} Supplementary Figure \arabic{figure}.}
+       {Python code for implementing the chained communication channel model.}
 \end{figure}
 
 \end{document}

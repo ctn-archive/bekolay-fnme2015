@@ -3,9 +3,6 @@
 \usepackage{url,lineno}
 \linenumbers
 \usepackage{inconsolata}
-\usepackage{listings}
-\lstset{language=Python}
-\lstset{basicstyle=\ttfamily,breaklines=true}
 
 \graphicspath{{../figures/}}
 
@@ -52,13 +49,14 @@
   and focuses primarily on functional performance.
   We propose that Nengo's large test suite
   can be used to benchmark neuromorphic hardware's
-  functional performance and speed simulating
+  functional performance and simulation speed
   in an efficient, unbiased, and future-proof manner.
   We implement four benchmark models and show that
   Nengo can collect several benchmark metrics
+  across five different backends
   that identify situations in which
-  some backends perform differently
-  or significantly faster than others.
+  some backends perform
+  with different accuracy and speed.
 
   \tiny
   % 5--8 keywords
@@ -205,7 +203,9 @@ and therefore run the benchmarks discussed in this paper.
 The primary abstraction in Nengo is the \textit{Ensemble},
 which is a group of neurons.
 The activity of these neurons
-forms a distributed representation of a numerical vector;
+is generally taken to be
+a distributed representation
+of a numerical state vector;
 for example, a group of 100 neurons might represent
 a three-dimensional vector,
 and as that vector changes,
@@ -294,7 +294,22 @@ with 500 neurons and 6 connections
 (representing 50,000 connection weights
 and 100 direct current injection sites)
 in under 20 lines of code
-can be seen in Appendix~\ref{App:01}.
+can be seen in Supplementary Figure~2.
+
+It is important to note that,
+although the Nengo frontend
+is designed to make functional networks
+with compact code,
+any spiking neural network topology
+can be implemented in Nengo.
+While we will only show examples
+of functional connection between ensembles,
+it is also possible
+to make direct neuron-to-neuron connections;
+functional and direct connections
+can coexist in the same network,
+as is commonly done in situations
+requiring direct inhibitory currents.
 
 \subsubsection{Backend requirements}
 \label{Sec:Backend}
@@ -425,13 +440,13 @@ Each test must determine what
 While this introduces some subjectivity
 to testing,
 we believe this is an acceptable consequence
-of the breadth of their application.
+of being able to test across multiple backends.
 When adapting these functional tests for benchmarking,
 we record the actual accuracy rather than
 ensuring that it is within some tolerances.
 
 Nengo's test suite employs the \texttt{pytest}
-testing framework \footnote{Available at \url{http://pytest.org/}.}.
+testing framework.\footnote{Available at \url{http://pytest.org/}.}
 \texttt{pytest} enables
 expressive testing of pluggable components
 (such as backends)
@@ -445,9 +460,10 @@ to the function.
 This allows for boilerplate code
 to be specified once,
 and run for any test that might use it.
-The example script in Appendix~\ref{App:01}
-demonstrates how these fixtures
-look in test scripts.
+A demonstration of how these fixtures
+are used in test scripts
+can be seen in an example script,
+included as Supplementary Figure~2.
 
 \subsubsection{Test fixtures}
 
@@ -610,13 +626,13 @@ of a wide variety of large-scale briain models
 
 Each test has several parameters
 that can be varied
-in order to benchmark extreme cases
+in order to benchmark a wide variety of cases
 (see Appendix~\ref{App:01} for examples).
 We test each model with parameters
 typically used in large-scale models,
 but make these parameterized models
-available at \url{https://github.com/tbekolay/fnme2015}
-for those who want to explore extreme cases.
+available at \url{https://github.com/ctn-archive/bekolay-fnme2015}
+for those who want to explore additional cases.
 
 \paragraph{1. Communication channel chain.}
 In this model,
@@ -782,7 +798,7 @@ both with accuracy and speed.
 \subsection{Benchmarking environment}
 
 All benchmarks were run on a server
-running Debian unstable.
+running Debian sid.
 The server was configured with
 two Intel Xeon E5-2650 CPUs
 clocked at 2.00GHz,
@@ -791,7 +807,8 @@ and 64 GB of RAM.
 A single 48-chip SpiNN-5 board
 was connected through
 a 1 GB ethernet port on
-the Supermicro X9DRG-QF motherboard.
+the Supermicro X9DRG-QF motherboard
+for the SpiNNaker benchmarks.
 
 The versions of software
 used for benchmarking can be found in
@@ -822,7 +839,7 @@ Figure~\ref{fig:01} gives accuracy results
 for each backend on the chained communication channel model.
 The boxplot shows that all five backends can
 implement this model accurately,
-despite five sources of potential noise.
+despite five layers of processing that include noise.
 
 Figure~\ref{fig:02} gives accuracy results
 for the two-dimensional product model.
@@ -985,10 +1002,12 @@ in that it can interact with multiple neural simulators
 with a high-level API, but its API focuses specifically
 on models of topographic maps
 and other sensory pathways,
-rather than focusing on function and dynamics.
+rather than focusing on
+a wider variety of functions
+and dynamics more generally.
 
 While we cannot claim that Nengo
-solves all of complications that arise
+solves all of the complications that arise
 in benchmarking,
 we believe that it improves upon
 the three major issues identified in the introduction.
@@ -1075,8 +1094,8 @@ to replicate the figures in this paper.
 
 The authors of this paper
 are three of the seven co-founders
-of Applied Brain Research (ABR),
-who are the sole copyright holders
+of Applied Brain Research (ABR, Inc.),
+which is the sole copyright holder
 of Nengo and the distilled backend.
 While ABR reserves the right
 to commercialize Nengo,
@@ -1114,12 +1133,19 @@ Eric Hunsberger for help in running
 the benchmarks on the OpenCL backend,
 and James Bergstra for
 implementing most of the OpenCL backend.
+We thank the Brainstorm group
+at Stanford University for making
+their experimental hardware emulation backend
+available to us.
 
 \paragraph{Funding\textcolon}
-NSERC Discovery,
 NSERC Graduate Fellowships,
+NSERC Discovery (grant 261453),
 ONR (N000141310419)
-and AFOSR (FA8655-13-1-3084). ??? Chris, can you confirm?
+AFOSR (FA8655-13-1-3084),
+Canada Research Chairs,
+and Canadian Foundation for Innovation
+Ontario Innovation Trust.
 
 \bibliographystyle{frontiersinSCNS}
 \bibliography{paper}
@@ -1232,7 +1258,7 @@ and AFOSR (FA8655-13-1-3084). ??? Chris, can you confirm?
          inter-quartile range; outliers are not shown.
          (C) The aggregated accuracy results for each backend on the
          basal ganglia sequence model, with most passthrough nodes pruned.
-         Lines has the same meaning as in B.}
+         Lines have the same meaning as in B.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1242,7 +1268,9 @@ and AFOSR (FA8655-13-1-3084). ??? Chris, can you confirm?
 \textbf{\refstepcounter{figure}\label{fig:05} Figure \arabic{figure}.}
        {Build time for each model on each backend. Each bar represents
          the mean build time across 50 instances of each model;
-         error bars are bootstrapped 95\% confidence intervals.}
+         error bars are bootstrapped 95\% confidence intervals.
+         BG Sequence * refers to the basal ganglia sequence model
+         in which passthrough nodes have been removed.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1257,61 +1285,10 @@ and AFOSR (FA8655-13-1-3084). ??? Chris, can you confirm?
          relative to real time; e.g., a value of two indicates that
          the calling \texttt{run} for a number of seconds takes
          the model two times that number of real seconds to complete the
-         \texttt{run} call.}
+         \texttt{run} call.
+         BG Sequence * refers to the basal ganglia sequence model
+         in which passthrough nodes have been removed.}
 
 \end{figure}
-
-\clearpage
-\appendix
-
-\section{Chained communication channel model}
-\label{App:01}
-
-\begin{lstlisting}
-import numpy as np
-import nengo
-from nengo.utils.numpy import rmse
-
-def test_cchannelchain(Simulator, analytics, plt, rng, seed):
-    # Parameters that can be varied to investigate extreme cases
-    dims = 2
-    layers = 5
-    n_neurons = 100
-    synapse = nengo.Lowpass(0.01)
-
-    with nengo.Network(seed=seed) as model:
-        hypersphere = nengo.dists.UniformHypersphere()
-        value = hypersphere.sample(dims, 1, rng=rng).ravel()
-        stim = nengo.Node(value)
-
-        ens = [nengo.Ensemble(n_neurons, dimensions=dims)
-               for _ in range(layers)]
-
-        nengo.Connection(stim, ens[0])
-        for i in range(layers - 1):
-            nengo.Connection(ens[i], ens[i+1], synapse=synapse)
-
-        p_input = nengo.Probe(stim)
-        p_outputs = [nengo.Probe(ens[i], synapse=synapse)
-                     for i in range(layers)]
-
-    sim = Simulator(model)
-    sim.run(0.5)
-
-    for p_output in p_outputs:
-        plt.plot(sim.trange(), sim.data[p_output])
-    plt.plot(sim.trange(), sim.data[p_input], color='k', linewidth=1)
-    plt.ylabel('Decoded output')
-    plt.xlabel('Time (s)')
-
-    last = p_outputs[-1]
-    decoding_rmse = rmse(value, sim.data[last][sim.trange() > 0.4]
-    analytics.add_data('rmse', decoding_rmse)
-
-def test_compare_cchannelchain(analytics_data, plt):
-    rmses = [d['rmse'] for d in analytics_data]
-    plt.bar(np.arange(len(rmses)), rmses, align='center')
-    plt.ylabel("RMSE")
-\end{lstlisting}
 
 \end{document}
