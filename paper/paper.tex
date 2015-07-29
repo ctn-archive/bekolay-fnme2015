@@ -52,11 +52,11 @@
   functional performance and simulation speed
   in an efficient, unbiased, and future-proof manner.
   We implement four benchmark models and show that
-  Nengo can collect several benchmark metrics
+  Nengo can collect metrics
   across five different backends
   that identify situations in which
-  some backends perform
-  with different accuracy and speed.
+  some backends perform more
+  accurately or quickly.
 
   \tiny
   % 5--8 keywords
@@ -74,7 +74,7 @@ as the tool being benchmarked
 may need changes to collect
 certain performance metrics.
 Even once that effort is undertaken,
-benchmarks often are run a few times
+benchmarks are often run a few times
 and then forgotten,
 quickly becoming obsolete.
 We propose that the Nengo test suite
@@ -103,7 +103,7 @@ are written once but run on all backends,
 making new benchmarks easy to implement.
 Nengo's primary goal is to
 build large-scale functional models,
-and hence its codebase contains
+and for this reason its codebase contains
 tests of functional performance;
 it is therefore not intentionally
 biased in favor of any particular backend.
@@ -116,7 +116,7 @@ the ability to collect benchmarks
 is automatically provided to any Nengo backend.
 Finally, since the test suite exists
 to ensure that Nengo continues to function
-correctly, and is run frequently using
+correctly, and is run whenever Nengo is changed using
 continuous integration systems,
 it will continue to grow and be run frequently,
 rather than becoming obsolete in the future.
@@ -128,8 +128,8 @@ The reference, distilled, and Brainstorm backends
 run on general purpose computers,
 and focus on aspects other than speed.
 The OpenCL backend aims to be a fast backend
-that still works on general purpose computers,
-but can also take advantage of
+that still works on general purpose computers
+and can take advantage of
 graphical processing units (GPUs).
 The SpiNNaker backend uses
 SpiNNaker neuromorphic hardware to
@@ -143,7 +143,7 @@ frontend and backend,
 and describe what any backend
 is required to implement.
 We describe Nengo's testing framework,
-including explanations of the testing fixtures
+including explanations of the test fixtures
 used to collect and visualize benchmarks.
 We then list the metrics
 that are collected in this paper,
@@ -155,12 +155,12 @@ for each backend.
 \section{Background}
 
 There are two key features of Nengo
-(starting from version 2.0)
+(from version 2.0 onward)
 that enable rapid benchmarking of neuromorphic systems.
 The first is a decoupling of model creation and simulation,
 resulting in a platform independent frontend interface
 to any backend that implements a certain set of requirements.
-The second is a ``fuzzy'' test suite ensuring that
+The second is a ``fuzzy'' test suite that ensures
 Nengo can be used to create models that solve cognitive tasks.
 The test suite makes ample use of test fixtures
 to enable data collection while testing on arbitrary backends.
@@ -207,8 +207,8 @@ is generally taken to be
 a distributed representation
 of a numerical state vector;
 for example, a group of 100 neurons might represent
-a three-dimensional vector,
-and as that vector changes,
+an agent's location in three-dimensional space,
+and as the agent moves,
 the pattern of neural activity
 will change accordingly.
 Two parameters are mandatory: the number of neurons,
@@ -225,16 +225,16 @@ The \textit{Node} provides a structure for all
 non-neural aspects of a model.
 \textit{Nodes} can provide input to a system,
 collect output values,
-interface with physical sensors and motors,
-or provide any other computation needed in a mode.
+interface with physical sensors and actuators,
+or provide any other computation needed in a model.
 In the case of the benchmarks presented in this paper,
 \textit{Nodes} are used to provide input signals
 to \textit{Ensembles}.
 
 The \textit{Connection} connects two objects
 (e.g., \textit{Ensembles} or \textit{Nodes}) together.
-The two objects being connected are the only mandatory parameters;
-the synapse model filtering the connection,
+The two objects being connected are the only mandatory parameters.
+The synapse model filtering the connection,
 a function applied to the vector
 communicated across the connection,
 and one or more learning rules
@@ -246,19 +246,20 @@ for data collection during run time
 by denoting that a particular
 quantity in the simulation should be recorded
 at a particular rate.
-The object to be probed must be specified;
-the attribute of that object,
+The object to be probed must be specified.
+The attribute of that object,
 a sampling rate, and a synapse model for filtering
 can optionally be specified.
 
 An important distinction between typical
-parameters and those specified in Nengo
-is that many are stochastic,
-and not necessarily guaranteed
+parameters in a neural simulation
+and those specified in Nengo
+is that Nengo parameters can be stochastic,
+and are not guaranteed
 to be supported by every backend.
 The vast majority of numeric parameters,
 for example,
-are most often specified as probability distributions;
+are often specified as probability distributions;
 an ensemble's maximum firing rate defaults to
 a uniform distribution,
 but this could be set to a Gaussian distribution
@@ -290,18 +291,20 @@ model creation scripts.
 
 An example script showing how Nengo can
 express a functional network
-with 500 neurons and 6 connections
-(representing 50,000 connection weights
-and 100 direct current injection sites)
-in under 20 lines of code
+with 500~neurons and 6~connections
+(representing 50,000~connection weights
+and 100~direct current injection sites)
+in under 20~lines of code
 can be seen in Supplementary Figure~2.
 
 It is important to note that,
 although the Nengo frontend
-is designed to make functional networks
-with compact code,
-any spiking neural network topology
-can be implemented in Nengo.
+is designed to make large-scale networks
+in relatively few lines of code,
+it does not impose any constraints
+that would preclude
+the creation
+of detailed small-scale networks.
 While we will only show examples
 of functional connection between ensembles,
 it is also possible
@@ -310,6 +313,9 @@ functional and direct connections
 can coexist in the same network,
 as is commonly done in situations
 requiring direct inhibitory currents.
+With both types of connections,
+it is possible to create
+any network topology in Nengo.
 
 \subsubsection{Backend requirements}
 \label{Sec:Backend}
@@ -317,7 +323,7 @@ requiring direct inhibitory currents.
 The role of the backend is to take
 a single network, which contains
 ensembles, nodes, connections, and probes,
-and construct the underlying objects necessary
+and construct the backend-specific objects necessary
 to implement the model specified by that network.
 That implementation is exposed to Python
 through a \textit{Simulator} object,
@@ -360,18 +366,18 @@ this advances the simulation
 by \texttt{time / dt} timesteps,
 where \texttt{dt} is fixed at the start of the simulation
 and cannot change;
-other backends may have variable-length timesteps,
-or may not explicitly track timesteps.
+other backends may have variable-length timesteps.
 
 The third method is \texttt{trange},
 which returns a sequence of times that correspond
 to the times at which data was probed.
-In the reference backend, this will be
+In the reference backend, \texttt{trange} always returns
 a straightforward sequence of increasing
 multiples of \texttt{dt};
-other backends may simulate at variable rates.
+other backends may simulate at variable rates,
+though the sequence of times must increase monotonically.
 
-Finally, the simulator object exposed by each backend
+Finally, the simulator object implemented by each backend
 must have an attribute called \texttt{data},
 which exposes a dictionary-like interface
 to the data being probed over the course
@@ -400,7 +406,7 @@ explicitly tracks what
 types of models can be implemented
 by each backend.
 The details of how each backend
-implements high-level frontend models
+implements the high-level frontend objects
 are out of the scope of this paper.
 
 \subsection{Fuzzy testing}
@@ -430,7 +436,7 @@ The accuracy of any large-scale model
 is dependent on many factors,
 including the number of neurons used
 to implement a particular task.
-For this reason,
+For these reasons,
 functional tests can only
 ensure that the backend implements
 the system described by the frontend
@@ -462,13 +468,12 @@ to be specified once,
 and run for any test that might use it.
 A demonstration of how these fixtures
 are used in test scripts
-can be seen in an example script,
-included as Supplementary Figure~2.
+can be seen in Supplementary Figure~2.
 
 \subsubsection{Test fixtures}
 
 Nengo's test suite defines several test fixtures
-to enable fuzzy testing
+to support fuzzy testing
 that collects and visualizes performance metrics
 on multiple backends.
 
@@ -497,7 +502,7 @@ which is changed periodically to ensure
 that tests have good tolerances.
 
 \paragraph{\texttt{Simulator}}
-allows for tests to be run with multiple backends.
+allows tests to be run with multiple backends.
 As detailed in Section~\ref{Sec:Backend},
 each backend must expose a simulator class
 that accepts a network.
@@ -528,18 +533,18 @@ to save arbitrary text to a specified
 or backend-specific directory;
 these are useful for summary statistics
 that can inspected manually.
-For large amounts of data that
-requires more analysis,
-\texttt{analytics} fixture exposes an interface
+For large amounts of data
+requiring more analysis,
+the \texttt{analytics} fixture exposes an interface
 to save arbitrary data (in the form of NumPy arrays)
 to specified or backend-specific directories.
 
 \paragraph{\texttt{analytics\_data}}
 enables comparative testing between
-two runs of the same test.
-The two runs might represent two versions
+two or more runs of the same test.
+The runs might represent multiple versions
 of the same backend---one before a
-speedup and one after---or two
+speedup and one after---or multiple
 entirely different backends.
 The \texttt{analytics\_data} fixture
 provides the results from those two
@@ -547,7 +552,7 @@ test runs to a single test function,
 allowing for comparisons
 between the two results saved
 with the \texttt{analytics} fixture.
-See Appendix~\ref{App:01} for a
+See Supplementary Figure~12Appendix~\ref{App:01} for a
 concrete example of using the
 \texttt{analytics\_data} fixture.
 
@@ -603,10 +608,12 @@ each backend incurs some overhead
 to manage the simulation in addition
 to actually moving the simulation forward.
 The amount of overhead depends
-on the backend; those on specific hardware platforms
+on the backend; backends making use
+of hardware other than the CPU
 (like the SpiNNaker and OpenCL backends)
 are likely to incur more overhead
-than those on general purpose platforms.
+than those using the same CPU core
+as the Nengo frontend.
 However, we include the overhead in
 our speed benchmarking because
 it is not possible to distinguish
@@ -627,17 +634,18 @@ of a wide variety of large-scale briain models
 Each test has several parameters
 that can be varied
 in order to benchmark a wide variety of cases
-(see Appendix~\ref{App:01} for examples).
+(see Supplementary Figure~2 for an example).
 We test each model with parameters
 typically used in large-scale models,
 but make these parameterized models
 available at \url{https://github.com/ctn-archive/bekolay-fnme2015}
-for those who want to explore additional cases.
+for those who wish to explore additional cases.
 
 \paragraph{1. Communication channel chain.}
 In this model,
 five ensembles,
-comprised of 500 leaky integrate-and-fire (LIF) neurons total,
+comprised of 100 leaky integrate-and-fire (LIF) neurons each
+(500 total),
 are connected in series,
 with a communication channel
 (i.e., the identity function)
@@ -647,7 +655,7 @@ communicate an input signal to
 the last ensemble in the chain.
 The input signal used is a static vector.
 This model tests how
-robust each backend is to noise introduced
+robust each backend is to the noise introduced
 by representing a vector space
 in the activity of spiking neurons.
 
@@ -683,14 +691,14 @@ As input, we provide an initial stimulus
 to start the oscillation,
 and provide a control signal
 to cause oscillation at
-2Hz, 1Hz, 0Hz, -1Hz, and -2Hz.
+2~Hz, 1~Hz, 0~Hz, -1~Hz, and -2~Hz.
 In total, the model is comprised of 600 LIF neurons.
 This model tests each backend's ability
 to stably implement a dynamical system,
 which is required for many cognitive functions
 like working memory and motor control.
 
-\paragraph{4. Basal Ganglia sequence.}
+\paragraph{4. Basal ganglia sequence.}
 In this model, brain structures
 known collectively as the basal ganglia
 are contructed from 4900 LIF neurons,
@@ -720,7 +728,7 @@ that must be made to
 a group of related objects.
 Since they do no processing,
 they can be difficult to deal with
-for backends that are designed to
+in backends that are designed to
 simulate neurons quickly.
 The basal ganglia makes liberal use
 of passthrough nodes,
@@ -737,11 +745,10 @@ The reference backend is designed to run quickly
 on any general purpose computer
 by using NumPy \citep{vanderwalt2011}
 for fast vectorized computations.
-It is included with the \texttt{nengo} frontend
+It is included with the Nengo frontend
 as \texttt{nengo.Simulator}.
-When appropriate, other backends will be benchmarked
-relative to the reference backend,
-which has the most features but does not target
+The reference backend offers
+the most features, but does not target
 specialized hardware.
 
 \paragraph{2. Distilled (\texttt{nengo\_distilled}).}
@@ -774,20 +781,20 @@ The Brainstorm backend is a software implementation
 of a new neuromorphic chip
 based partly on Neurogrid \citep{benjamin2014}
 currently in development
-by the Brain in Silicon lab
-at Stanford University\footnote{
-  Some details available at \url{http://brainstorm.stanford.edu/projects/}.}.
+by the Brains in Silicon lab
+at Stanford University.\footnote{
+  Some details available at \url{http://brainstorm.stanford.edu/projects/}.}
 The software backend does not aim for speed;
-instead, it attempts to emulate the hardware
+instead, it attempts to emulate the proposed hardware
 in order to test its applicability
-to large-scale neural models.
+for large-scale neural models.
 If the emulated hardware can perform well,
 then it follows that actual hardware
 will also perform well,
 but will be much faster.
 
 \paragraph{5. SpiNNaker hardware (\texttt{nengo\_spinnaker}).}
-The SpiNNaker backend \citep{mundyinpress}
+The SpiNNaker backend \citep{mundy2015}
 targets the eponymous neuromorphic hardware
 developed by \citet{furber2014}.
 In contrast to the Brainstorm backend,
@@ -797,11 +804,11 @@ both with accuracy and speed.
 
 \subsection{Benchmarking environment}
 
-All benchmarks were run on a server
-running Debian sid.
+All benchmarks were run 50 times
+on a server running Debian sid.
 The server was configured with
 two Intel Xeon E5-2650 CPUs
-clocked at 2.00GHz,
+clocked at 2.00~GHz,
 four Nvidia Tesla C2075 GPUs,
 and 64 GB of RAM.
 A single 48-chip SpiNN-5 board
@@ -839,13 +846,14 @@ Figure~\ref{fig:01} gives accuracy results
 for each backend on the chained communication channel model.
 The boxplot shows that all five backends can
 implement this model accurately,
-despite five layers of processing that include noise.
+despite five layers of processing
+that each introduce noise.
 
 Figure~\ref{fig:02} gives accuracy results
 for the two-dimensional product model.
 In this case, while all of the backends
 perform well, the SpiNNaker backend
-performs worse than the other four backends.
+is less accurate than the other four backends.
 Its performance, however, is still well within
 acceptable ranges for the two-dimensional product model.
 
@@ -861,7 +869,7 @@ as compared to other backends.
 
 Figure~\ref{fig:04} gives accuracy results
 for the basal ganglia sequence model.
-For the version of model with passthrough nodes,
+For the version of the model with passthrough nodes,
 all of the backends perform similarly,
 except for the SpiNNaker backend.
 All other backends have a transition time
@@ -878,7 +886,7 @@ is also significantly larger
 than that of other backends.
 However, its performance for
 the version of the model
-with far fewer passthrough nodes
+with passthrough nodes removed
 is a closer match to the other backends.
 Its median transition time
 is around 47 milliseconds,
@@ -915,16 +923,17 @@ perform adequately for the three smaller models.
 The OpenCL backend is significantly slower for small
 models, like the product and controlled oscillator models.
 SpiNNaker, on the other hand, is slower than other backends
-for these models, because its goal
+for these models because its goal
 is to run in real-time even if it is possible to run faster.
+
 The most important result is for the largest model,
 the basal ganglia sequence.
 In this model, the distilled and Brainstorm backends
-performed very poorly
-(though neither has speed as a primary goal).
+performed poorly,
+though neither has speed as a primary goal.
 The reference backend also did not perform well,
 operating at nearly six times slower than real-time.
-The OpenCL backend performed well, operating at around
+The OpenCL backend performed better, operating at around
 three times slower than real-time.
 The best performance was seen by the SpiNNaker backend,
 however, which operated at around 1.2 times real-time
@@ -961,7 +970,7 @@ with little to no cost in accuracy.
 The conditions under which the OpenCL backend
 performs slower than the reference backend
 (e.g., the product and controlled oscillator models)
-bear closer inspection to determine the source
+warrant closer inspection to determine the source
 of the slowdown.
 Similarly, we should investigate
 the product model instances
@@ -971,20 +980,20 @@ differs from other backends.
 It should be noted that although there are clear
 relative speed differences between backends,
 these models are very small---each would only
-be a small component of a larger model.
+be a small component of a real large-scale model.
 Spaun, for example, includes multiple copies
 or larger versions of all four of the models
 benchmarked here.
-Additionally, we run them
+Additionally, in this study, we run these models
 for very small amounts of time---the longest
 simulation runs for 10 simulated seconds.
 Real models run for longer amounts of time
-to gather data comparable to those gathered
+to gather data comparable to data gathered
 in neuroscientific experiments.
 However, we expect that the results
 would be similar
-in larger models run for longer amount of time.
-The distilled and brainstorms backends should
+in larger models run for longer amounts of time.
+The distilled and Brainstorm backends should
 perform slowly, the OpenCL backend should
 run faster than the reference backend,
 and SpiNNaker will continue to run at real-time.
@@ -994,7 +1003,7 @@ however, we believe that the primary contribution
 of this study is to provide evidence that Nengo
 has a tested, stable, productive frontend
 that can target multiple backends,
-and therefore provides a platform
+and therefore provides an attractive platform
 for benchmarking neuromorphic backends,
 and other neural simulators.
 While this is similar to the goal
@@ -1035,8 +1044,7 @@ as the only requirement for using
 Nengo is to develop a backend.
 Building a Nengo backend for
 a piece of neuromorphic hardware
-gives access to all of the models
-already developed for it,
+gives access to all Nengo models,
 which is reason enough to develop a backend.
 The ability to collect functionally relevant benchmarks
 comes ``for free'' once the backend exists.
@@ -1094,7 +1102,7 @@ are available at
 The results of running the benchmarks
 are not included in the repository;
 however, they can be downloaded separately at
-\url{}
+\url{http://dx.doi.org/10.6084/m9.figshare.1496569}
 to replicate the figures in this paper.
 
 \section*{Disclosure/Conflict-of-Interest Statement}
@@ -1185,7 +1193,8 @@ Ontario Innovation Trust.
          Each ensemble reaches approximately the correct value
          (indicated with the solid black line)
          but with slight delays depending on their position in the chain.
-         (B) The aggregated accuracy results for each backend on the
+         (B) The aggregated accuracy results for
+         50 trials of each backend on the
          chained communication channel model. The observed metric is the root
          mean-squared error (RMSE) between the decoded output of the last
          ensemble in the chain and the correct value (which is randomly
@@ -1208,7 +1217,8 @@ Ontario Innovation Trust.
          (B) The decoded product represented by an ensemble downstream
          of the ensemble representing the input. It closely matches the
          correct product (indicated with the solid black line).
-         (C) The aggregated accuracy results for each backend on the
+         (C) The aggregated accuracy results for 50 trials of
+         each backend on the
          two-dimensional product model. The measured metric is the root
          mean-squared error (RMSE) between the decoded output of the ensemble
          representing the product and the correct product, during the whole
@@ -1230,7 +1240,8 @@ Ontario Innovation Trust.
          colored to indicate the target frequency given by the control signal.
          High power is seen only at the frequency we attempt to induce,
          for each of the five test frequencies.
-         (B) The aggregated accuracy results for each backend on the
+         (B) The aggregated accuracy results for 50 trials of
+         each backend on the
          two-dimensional product model. The measured metric is the similarity
          between the power spectrum (calculated using the Fast Fourier
          Transform or FFT) of the decoded output of one of the two oscillatory
@@ -1247,7 +1258,7 @@ Ontario Innovation Trust.
   \includegraphics[width=85mm]{fig4}
 \end{center}
 \textbf{\refstepcounter{figure}\label{fig:04} Figure \arabic{figure}.}
-       {Basal Ganglia sequence model. (A) One example instance
+       {Basal ganglia sequence model. (A) One example instance
          of the model run on the reference backend; the similarity between
          the current representation in working memory and the six possible
          actions is shown (note that in the full benchmark, ten items are
@@ -1255,7 +1266,8 @@ Ontario Innovation Trust.
          cycling back at the end of the six items. The point at which the
          model switches from selecting one action to another action
          (the transition times) are indicated with dashed grey lines.
-         (B) The aggregated accuracy results for each backend on the
+         (B) The aggregated accuracy results for 50 trials of
+         each backend on the
          basal ganglia sequence model, with all passthrough nodes included.
          The observed metric is the mean
          time to transition from one action to the next. The model is run
@@ -1263,7 +1275,8 @@ Ontario Innovation Trust.
          on the transition time. The box shows the median and
          inter-quartile range, while the whiskers extend to 1.5 times the
          inter-quartile range; outliers are not shown.
-         (C) The aggregated accuracy results for each backend on the
+         (C) The aggregated accuracy results for 50 trials of
+         each backend on the
          basal ganglia sequence model, with most passthrough nodes pruned.
          Lines have the same meaning as in B.}
 \end{figure}
