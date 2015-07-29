@@ -3,6 +3,9 @@
 \usepackage{url,lineno}
 \linenumbers
 \usepackage{inconsolata}
+\usepackage{listings}
+\lstset{language=Python}
+\lstset{basicstyle=\ttfamily,breaklines=true}
 
 \graphicspath{{../figures/}}
 
@@ -295,7 +298,7 @@ with 500~neurons and 6~connections
 (representing 50,000~connection weights
 and 100~direct current injection sites)
 in under 20~lines of code
-can be seen in Supplementary Figure~2.
+can be seen in Appendix~A.
 
 It is important to note that,
 although the Nengo frontend
@@ -468,7 +471,7 @@ to be specified once,
 and run for any test that might use it.
 A demonstration of how these fixtures
 are used in test scripts
-can be seen in Supplementary Figure~2.
+can be seen in Appendix~A.
 
 \subsubsection{Test fixtures}
 
@@ -552,7 +555,7 @@ test runs to a single test function,
 allowing for comparisons
 between the two results saved
 with the \texttt{analytics} fixture.
-See Supplementary Figure~12Appendix~\ref{App:01} for a
+See Appendix~A for a
 concrete example of using the
 \texttt{analytics\_data} fixture.
 
@@ -634,7 +637,7 @@ of a wide variety of large-scale briain models
 Each test has several parameters
 that can be varied
 in order to benchmark a wide variety of cases
-(see Supplementary Figure~2 for an example).
+(see Appendix~A for an example).
 We test each model with parameters
 typically used in large-scale models,
 but make these parameterized models
@@ -819,7 +822,7 @@ for the SpiNNaker benchmarks.
 
 The versions of software
 used for benchmarking can be found in
-Supplementary Table~1.
+Table~\ref{Tab:02}.
 
 \section{Results}
 
@@ -959,7 +962,7 @@ However, we found that
 removing probes from these models
 made very little impact on
 the total time taken in a \texttt{run} call
-(see Supplementary Figure~1).
+(see Figure~\ref{fig:07}).
 
 \section{Discussion}
 
@@ -1093,7 +1096,7 @@ All of the software packages discussed in this paper
 are available online,
 except for the Brainstorm backend,
 which has not yet been publicly released
-(see Supplementary Table~1).
+(see Table~\ref{tab:02}).
 All of the benchmarks presented here,
 as well as the scripts used to generate
 the presented figures,
@@ -1165,6 +1168,57 @@ Ontario Innovation Trust.
 \bibliographystyle{frontiersinSCNS}
 \bibliography{paper}
 
+\clearpage
+
+\section*{Appendix A: Chained Communication Channel model}
+
+\begin{lstlisting}
+import numpy as np
+import nengo
+from nengo.utils.numpy import rmse
+
+def test_cchannelchain(Simulator, analytics, plt, rng, seed):
+    # Parameters that can be varied to investigate extreme cases
+    dims = 2
+    layers = 5
+    n_neurons = 100
+    synapse = nengo.Lowpass(0.01)
+
+    with nengo.Network(seed=seed) as model:
+        hypersphere = nengo.dists.UniformHypersphere()
+        value = hypersphere.sample(dims, 1, rng=rng).ravel()
+        stim = nengo.Node(value)
+
+        ens = [nengo.Ensemble(n_neurons, dimensions=dims)
+               for _ in range(layers)]
+
+        nengo.Connection(stim, ens[0])
+        for i in range(layers - 1):
+            nengo.Connection(ens[i], ens[i+1], synapse=synapse)
+
+        p_input = nengo.Probe(stim)
+        p_outputs = [nengo.Probe(ens[i], synapse=synapse)
+                     for i in range(layers)]
+
+    sim = Simulator(model)
+    sim.run(0.5)
+
+    for p_output in p_outputs:
+        plt.plot(sim.trange(), sim.data[p_output])
+    plt.plot(sim.trange(), sim.data[p_input], color='k', linewidth=1)
+    plt.ylabel('Decoded output')
+    plt.xlabel('Time (s)')
+
+    last = p_outputs[-1]
+    decoding_rmse = rmse(value, sim.data[last][sim.trange() > 0.4]
+    analytics.add_data('rmse', decoding_rmse)
+
+def test_compare_cchannelchain(analytics_data, plt):
+    rmses = [d['rmse'] for d in analytics_data]
+    plt.bar(np.arange(len(rmses)), rmses, align='center')
+    plt.ylabel("RMSE")
+\end{lstlisting}
+
 \section*{Figures}
 
 \begin{table}[!ht]
@@ -1178,6 +1232,25 @@ Ontario Innovation Trust.
  OpenCL (\texttt{nengo\_ocl}) & 187 & 88.2\% \\
  Distilled (\texttt{nengo\_distilled}) & 129 & 60.8\% \\
  Brainstorm (\texttt{nengo\_brainstorm}) & 107 & 50.4\% \\\botrule
+\end{tabular}}{}
+\end{table}
+
+\begin{table}[!ht]
+\textbf{\refstepcounter{table}\label{Tab:02} Table \arabic{table}.}{
+  Software versions used for benchmarking.
+  The PyPI name is the unique identifier used for installing the Python package
+  through the Python Package Index (PyPI). Packages can be found by
+  visiting \url{https://pypi.python.org/pypi/<PyPI name>}.}
+
+\processtable{ }
+{\begin{tabular}{lcc}\toprule
+ Package & PyPI name & Version number\\\midrule
+ Nengo & \texttt{nengo} & Development version, commit \texttt{7d2d24145} \\
+ Distilled backend & \texttt{nengo\_distilled} & 0.1.0 \\
+ OpenCL backend & \texttt{nengo\_ocl} & 0.1.0 \\
+ Brainstorm backend & Not available on PyPI & Development version, commit \texttt{ac3cfa708} \\
+ SpiNNaker backend & \texttt{nengo\_spinnaker} & 0.2.4 \\
+ NumPy & \texttt{numpy} & 1.8.1 \\\botrule
 \end{tabular}}{}
 \end{table}
 
@@ -1310,5 +1383,23 @@ Ontario Innovation Trust.
          in which passthrough nodes have been removed.}
 
 \end{figure}
+
+\begin{figure}[!ht]
+\begin{center}
+  \includegraphics[width=85mm]{fig7}
+\end{center}
+\textbf{\refstepcounter{figure}\label{fig:07} Figure \arabic{figure}.}
+       {Run time for each model with probes removed on each backend.
+         Each bar represents the mean run time across 100 instances
+         of each model;
+         error bars are 95\% confidence intervals.
+         Run time is measured relative to real time;
+         e.g., a value of two indicates that the model ran twice as slow
+         as real time.
+         BG Sequence * refers to the basal ganglia sequence model
+         in which passthrough nodes have been removed.}
+\end{figure}
+
+
 
 \end{document}

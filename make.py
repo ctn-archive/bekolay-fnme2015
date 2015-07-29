@@ -38,7 +38,6 @@ def task_paper():
                 'actions': [pdf, bib, pdf, pdf] if bibtex else [pdf, pdf],
                 'targets': [pdf_file]}
     yield forsurecompile('paper')
-    yield forsurecompile('supplementary', bibtex=False)
 
 
 def task_compliance():
