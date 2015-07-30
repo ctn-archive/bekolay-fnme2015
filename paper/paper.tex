@@ -125,7 +125,7 @@ it will continue to grow and be run frequently,
 rather than becoming obsolete in the future.
 
 Several Nengo backends exist or are in active development.
-In this paper, we will run benchmarks
+In this paper, we run benchmarks
 on five backends.
 The reference, distilled, and Brainstorm backends
 run on general purpose computers,
@@ -241,8 +241,7 @@ The synapse model filtering the connection,
 a function applied to the vector
 communicated across the connection,
 and one or more learning rules
-can optionally be specified,
-along with several other optional parameters.
+can optionally be specified.
 
 The \textit{Probe} provides the main mechanism
 for data collection during run time
@@ -631,7 +630,7 @@ for tests that define an accuracy metric
 (i.e., those that use the \texttt{analytics} fixture).
 In this study, we focus on four such tests
 that address central functioning aspects
-of a wide variety of large-scale briain models
+of a wide variety of large-scale brain models
 (see \citealp{eliasmith2003a,eliasmith2013}).
 
 Each test has several parameters
@@ -704,8 +703,8 @@ like working memory and motor control.
 \paragraph{4. Basal ganglia sequence.}
 In this model, brain structures
 known collectively as the basal ganglia
-are contructed from 4900 LIF neurons,
-organized such that they iterate
+are constructed from 4900 LIF neurons,
+and are organized such that they iterate
 through a repeating set of actions.
 This model has been used to investigate
 action selection and learning \citep{stewart2012a}
@@ -815,8 +814,8 @@ clocked at 2.00~GHz,
 four Nvidia Tesla C2075 GPUs,
 and 64 GB of RAM.
 A single 48-chip SpiNN-5 board
-was connected through
-a 1 GB ethernet port on
+was connected directly to
+a 1 Gb/s Ethernet port on
 the Supermicro X9DRG-QF motherboard
 for the SpiNNaker benchmarks.
 
@@ -876,14 +875,9 @@ For the version of the model with passthrough nodes,
 all of the backends perform similarly,
 except for the SpiNNaker backend.
 All other backends have a transition time
-around 43 milliseconds, which matches
-the results from \citet{stewart2010}
-for simple actions.
-The SpiNNaker backend has a median transition time
-around 51 milliseconds, which is slower
-than the time reported by Stewart et al.
-for simple actions, but faster than the
-time reported for complex actions;
+around 43 milliseconds,
+but the SpiNNaker backend has a median transition time
+around 51 milliseconds;
 its interquartile range
 is also significantly larger
 than that of other backends.
@@ -943,7 +937,8 @@ however, which operated at around 1.2 times real-time
 (including overhead) on this moderately-sized model.
 Since the SpiNNaker board always runs at real-time,
 this means that around one-sixth of the time taken
-for the \texttt{run} call is overhead.
+for the \texttt{run} call is overhead
+when running this model for 10 seconds.
 
 Interestingly, while removing passthrough nodes
 results in significantly slower run times
@@ -975,10 +970,23 @@ performs slower than the reference backend
 (e.g., the product and controlled oscillator models)
 warrant closer inspection to determine the source
 of the slowdown.
-Similarly, we should investigate
-the product model instances
+
+Differences in accuracy benchmarks
+are also important for individual backends.
+The improved accuracy
+for the SpiNNaker backend
+when passthrough nodes are removed
+from the basal ganglia model
+has resulted in ongoing work to
+automatically remove passthrough nodes
+in the build phase of the SpiNNaker backend.
+Similarly, we will investigate
+instances of the product model
 in which the SpiNNaker backend
-differs from other backends.
+is less accurate than other backends,
+though we suspect that its
+lack of floating point hardware
+may be responsible.
 
 It should be noted that although there are clear
 relative speed differences between backends,
@@ -1273,8 +1281,8 @@ def test_compare_cchannelchain(analytics_data, plt):
          ensemble in the chain and the correct value (which is randomly
          selected on each trial), during the last 100 milliseconds of the
          500 millisecond simulation. The box shows the median and
-         inter-quartile range, while the whiskers extend to 1.5 times the
-         inter-quartile range; outliers are not shown.}
+         interquartile range, while the whiskers extend to 1.5 times the
+         interquartile range; outliers are not shown.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1298,8 +1306,8 @@ def test_compare_cchannelchain(analytics_data, plt):
          range of inputs provided over 5 simulated seconds (after a 500
          millisecond wait period to allow the input ensemble to reach the
          correct initial state). The box shows the median and
-         inter-quartile range, while the whiskers extend to 1.5 times the
-         inter-quartile range; outliers are not shown.}
+         interquartile range, while the whiskers extend to 1.5 times the
+         interquartile range; outliers are not shown.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1322,8 +1330,8 @@ def test_compare_cchannelchain(analytics_data, plt):
          computed on a pure sine wave oscillating at the induced frequency.
          Similarity is computed using a normalized dot product across
          all frequencies. The box shows the median and
-         inter-quartile range, while the whiskers extend to 1.5 times the
-         inter-quartile range; outliers are not shown.}
+         interquartile range, while the whiskers extend to 1.5 times the
+         interquartile range; outliers are not shown.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1346,8 +1354,8 @@ def test_compare_cchannelchain(analytics_data, plt):
          time to transition from one action to the next. The model is run
          for four seconds, allowing for approximately 90 transitions, depending
          on the transition time. The box shows the median and
-         inter-quartile range, while the whiskers extend to 1.5 times the
-         inter-quartile range; outliers are not shown.
+         interquartile range, while the whiskers extend to 1.5 times the
+         interquartile range; outliers are not shown.
          (C) The aggregated accuracy results for 50 trials of
          each backend on the
          basal ganglia sequence model, with most passthrough nodes pruned.
@@ -1399,7 +1407,5 @@ def test_compare_cchannelchain(analytics_data, plt):
          BG Sequence * refers to the basal ganglia sequence model
          in which passthrough nodes have been removed.}
 \end{figure}
-
-
 
 \end{document}
