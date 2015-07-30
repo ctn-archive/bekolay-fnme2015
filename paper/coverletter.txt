@@ -1,0 +1,38 @@
+Dear Editor,
+
+Please accept for consideration our Original Research paper submitted
+to Frontiers in Neuromorphic Engineering entitled "Benchmarking
+neuromorphic systems with Nengo." We intend this paper to be part of
+the Research Topic "Benchmarks and Challenges for Neuromorphic
+Engineering." This manuscript has not been submitted for publication
+elsewhere.
+
+Our paper argues that Nengo is a useful tool for benchmarking
+neuromorphic hardware. Two aspects of Nengo's architecture make it a
+useful tool for benchmarking. First, there is a strict separation
+between the Nengo frontend, which modelers use to define their models,
+and Nengo backends, which translate the model to low-level objects
+that can be simulated. Currently, there are at least six Nengo
+backends implemented; in this paper we benchmark five of them,
+including a backend that runs models on SpiNNaker neuromorphic
+hardware. Second, Nengo contains a robust suite of tests to ensure it
+can perform several cognitively relevant functions. The test suite is
+designed to be used by any backend, and so any neuromorphic hardware
+that implements a Nengo backend gets access to this test suite, which
+currently includes a few benchmarks, and will grow to contain many
+benchmarks in the future.
+
+The paper describes four new benchmark models, and presents results
+from running those four benchmarks on five backends. We find that the
+SpiNNaker backend is significantly faster than other backends, but has
+some accuracy issues for some backends. We believe that this is a
+promising result given that the actual code to run, analyze, and
+visualize these four benchmarks models is less than 500 lines of
+Python code, and took little time to develop. We think that the
+results gleaned from these benchmarks provide evidence that Nengo can
+provide a useful set of benchmarks for a wide variety of neuromorphic
+systems, which should be of interest to this Research Topic.
+
+Sincerely,
+
+Trevor Bekolay, Terrence C. Stewart, Chris Eliasmith
