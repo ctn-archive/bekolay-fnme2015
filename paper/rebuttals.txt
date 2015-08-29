@@ -1,0 +1,292 @@
+Todo list
+=========
+
+Work
+
+- [ ] 1-4: Try to get unit tests running SpiNNaker
+- [ ] 1-4: Why does removing probes slow down reference?
+- [ ] 1-4: Ensure confidence intervals are real things
+- [ ] 2-2: Find some citations of previous neuromorphic / simulator benchmarking
+- [ ] 2-4: Collect information about current inputs?
+- [ ] 2-5: Use different boxplot whisker type?
+
+Writing
+
+- [ ] 1-4: Rewrite lines 320-325
+- [ ] 1-4: Write something about negative frequencies
+- [ ] 1-4: Look up CPG frequencies or something
+- [ ] 1-4: Explain compliance more (Table 1 especially)
+- [ ] 1-5: Add discussion paragraph on efficiency
+- [ ] 2-3: Add text on limitations to introduction / discussion
+- [ ] 2-4: Add discussion on current input vs spike input?
+- [ ] 2-4: Discuss why you'd want to set seeds
+- [ ] 2-4: Comment on larger networks
+- [ ] 2-4: Define fuzzy testing
+- [ ] 2-4: Change table 1, 2 order
+- [ ] 2-5: Better accuracy figure descriptions
+- [ ] 2-5: Fig 7: Why are some slower with no probes
+- [ ] 2-6: Fix typo
+- [ ] 2-7: Fix citation for Stewart 2010
+
+Reviewer 1
+==========
+
+1. What are the main findings reported in this manuscript?
+----------------------------------------------------------
+
+The main contribution of this work is a benchmarking suite designed to
+test neuron simulators in a relevant and objective way. This is
+performed by analyzing three fundamental metrics - compliance,
+accuracy, and speed - under different network test
+conditions. Compliance metrics determine feature coverage for a neural
+simulator, while the accuracy and speed metrics are tested under four
+neurally-relevant operations: representation with robustness to noise,
+nonlinear computation, stability with recurrent dynamics, and
+large-scale interaction of multiple recurrent populations, all
+implemented with neurons. Finally, five neural simulators with
+different algorithmic and hardware optimizations are tested on these
+benchmarks.
+
+
+2. Other comments on the introduction.
+--------------------------------------
+
+The introduction is well-written and motivates the study; the
+background provides sufficient detail to understand the architecture
+of this solution.
+
+3. Other comments on the materials and methods.
+-----------------------------------------------
+
+The materials and methods describes well the metrics and models used
+to evaluate the backends.
+
+4. Other comments on the results.
+---------------------------------
+
+1. Further clarification should be given as to why the SpiNNaker
+backend was not tested for compliance, as lines 276-77 are not
+sufficient. The reason is not clear as build and run time for the
+examined models in Figures 5-7 do not seem prohibitive to running 212
+tests; additionally, SpiNNaker supports a wide variety of neuron
+models and parameters, so it appears adequate to support the necessary
+descriptions required by Nengo. Please clarify.
+
+2. Lines 320-325 are not clear.
+
+a) While Figure 6 does show an increase for the Nengo reference
+backend run times by removing passthrough nodes, the run time appears
+to be a 15% increase (~7x vs ~6x slower than real-time, Figure 6
+green, BG Sequence to BG Sequence *), which is approximately the same
+relative speedup as that offered by removing probes for the SpiNNaker
+backend (~1.5x to ~1.2x, Figures 6 and 7, BG sequence, blue). So,
+"significant" is a strong claim and should be clarified.
+
+b) Additionally, Figure 7 seems to indicate that removing probes
+actually makes the network slower for the reference backend for BG
+sequence * (~8x vs ~6.8x, Figures 6 and 7, light blue, BG Sequence
+*). Either outliers / standard deviations are stronger than they
+appear from the plot, or the reason for the network slowing down with
+probes removed should be explained.
+
+c) Finally, the speedup by removing passthrough nodes for the OpenCL
+backend (Figure 6, green, BG sequence to BG sequence*) disappears once
+probes are removed (Figure 7, green, BG sequence to BG sequence*).
+
+Essentially, please verify that the error bars on the plots are
+representative of the true confidence intervals. If they are correct,
+there seem to be some anomalies in the data (removing reporting output
+slows down the reference backend for BG*, speedups in OpenCL become
+slowdowns once reporting output is removed). If this all has to do
+with build time / overhead / short runtimes / network latency, then
+that should be mentioned in the text.
+
+3. In Figure 3, the meaning of negative frequencies (-1 Hz, -2 Hz)
+should be at least briefly mentioned. Presumably, since this is a
+circular oscillator, it is being run in reverse. However, it's not
+clear to me why negative frequencies should be at all different than
+positive frequencies, and how the range -2 Hz to 2 Hz was chosen. A
+citation that references this range in biology for CPGs, for example,
+would bolster this choice.
+
+4. Table 1, the compliance of the four backends, should be explained
+more fully in the caption. The levels of coverage are surprisingly low
+given that all backends are able to perform the main cognitive-level
+tasks; common failure cases (e.g., missing neuron models) should be
+mentioned to show why these are not necessary.
+
+5. Other comments on the discussion or the conclusions.
+-------------------------------------------------------
+
+The initially stated conclusion that significant speedups can be
+obtained with specialized hardware without sacrificing accuracy is
+good, although perhaps not very surprising. However, the greater
+challenge of creating a list of cognitively-relevant tasks and an
+infrastructure for objective testing is significant. Moreover, the
+improved accuracy of SpiNNaker with passthrough nodes removed,
+discovered by these tests, is an encouraging sign that the
+optimization loop of hardware and implementation through this test
+framework can yield real improvements.
+
+The biggest omission from this discussion and the manuscript is any
+mention of efficiency. Neuromorphic systems have long held that their
+primary advantage is significant efficiency, and the lack of ability
+of the benchmarking to capture that is unfortunate. This could perhaps
+be implemented as an optional query on the backend; the power
+consumption of most CPUs and GPUs can be publicly referenced and
+approximated, or the implementation could provide its own statistics
+for specialized hardware. Perhaps the Brainstorm backend’s main
+advantage is in power efficiency, and there should be resulting
+statistics that can show that. Regardless of implementation, the
+authors should at least mention that efficiency could be evaluated in
+future work.
+
+6. Please add here any further comments on this manuscript.
+--------------------------------------------------------
+
+This work addresses a very challenging topic - that is, how to
+objectively compare systems designed for different objectives in a
+high-dimensional benchmarking space. The approach of choosing
+cognitive tasks and measuring the ability of neuromorphic systems to
+perform them is insightful and relevant.
+
+It does, however, represent only an initial step towards obtaining the
+necessary concrete metrics to measure neuromorphic systems. Many
+quantities remain untested in this framework; researchers who build
+neuromorphic systems designed for neural simulation, the target
+audience of this manuscript, focus on optimizing many of the following
+quantities: simulation speed, simulation accuracy, energy per synaptic
+event, accurate timing, number of neurons represented, number of
+connections represented, repertoire of neural models, online learning,
+and likely others. Of these, the test framework objectively compares
+only along the first two, though the compliance tests likely would
+stress some of the others. I hope to see future work along these lines
+to expand the reach of these tests.
+
+Nonetheless, this work provides a substantive proposal to begin
+evaluating neuromorphic neural simulators.
+
+Reviewer 2
+==========
+
+1. What are the main findings reported in this manuscript?
+----------------------------------------------------------
+
+This paper describes how the Nengo test suite can be used for
+benchmarking neuromorphic systems and compare them to neural
+simulators on general-purpose computers. It introduces the Nengo test
+suite, describes three benchmark metrics (compliance, accuracy, speed)
+and shows benchmark results for four tests on five different
+backends. Of these backends, only one is actually running on
+neuromorphic hardware, one is a simulator of a neuromorphic system,
+and three are software simulators (with one employing GPUs). Benchmark
+results are shortly discussed.
+
+2. Does the introduction present the study in an appropriate context?
+---------------------------------------------------------------------
+
+No
+
+The introduction gives a clear motivation for the work in the article,
+but it does not state which works have been done previously on that
+topic. For example, there are several articles investigating accuracy
+in neuromorphic hardware for specific benchmark problems. As three of
+the backends are software-based, it would also be appropriate here to
+cite prior work on accuracy/speed in neural software simulators.
+
+3. Other comments on the introduction.
+--------------------------------------
+
+As the Nengo test suite was not designed for benchmarking, it would be
+helpful to have some indications on the limitations of the method (its
+potential is described already pretty clear) - this could be done in
+the Discussion section as well.
+
+4. Other comments on the materials and methods.
+-----------------------------------------------
+
+I found the separation in Background and Methods helpful for
+understanding, even if it does not follow the standard article
+structure. Some points should be clarified:
+
+- The benchmarks make use of current input to neurons. However, quite
+  a lot of neuromorphic systems do only offer spike input, or current
+  inputs are not so flexible to program. Of course, current input can
+  be emulated by spike input, but that may add some additional
+  noise/inaccuracy. This should be dicsussed in the Background/Methods
+  sections; also, an indication on how the currents look like in the
+  benchmark models would be helpful, so that designers of neuromorphic
+  systems get an idea of what would be required.
+
+- At several points, the authors mention that seeds can be set
+  explicitely for deterministic experiment runs. Is there a reason for
+  this? For benchmarking, setting a fixed seed is misleading in my
+  opinion, as it suggests that all backends run exactly the same
+  experiment. However, as the order in which the single parts of a
+  network are generated is not the same, this is not the case in
+  general. Furthermore, neuromorphic hardware systems may use built-in
+  noise sources (i.e. true random numbers). All that requires a
+  statistical comparison of results over several experiment
+  repetitions, as the authors do in their benchmarks.
+
+- The authors state that Nengo is well-suited for generating large
+  networks. However, the tests they present are only limited in
+  size. A comment on larger benchmark models in the test suite and/or
+  the possibility to scale up the present benchmarks would be
+  desirable.
+
+Minor:
+
+- I found the heading of section 2.2 ("Fuzzy testing") puzzling - is
+  this a fixed term I am missing? In any case, it would be helpful to
+  explain the term.
+
+- Table 2 is referenced before Table 1 in the text - their order
+  should be changed
+
+5. Other comments on the results.
+---------------------------------
+
+I found the description of the Figures on accuracy too short. Even if
+the accuracy results themselves are not the main focus of the article,
+some more explanations for the results should be given. In particular,
+in Figs. 1 and 2, why does the Nengo reference backend show a
+significantly higher variability than the Brainstorm and distilled
+backends? In Figs. 3 and 4, where do the deviations in the SpiNNaker
+backend come from (my first guess would be the employed 1ms time step,
+which is larger than the 0.1ms typically used in software simulators)?
+
+Also, the whiskers in Figs. 1-4 seem to be only multiples of the box
+sizes, so plotting them does not add any information - it may be even
+misleading when not carefully reading the caption.
+
+Some of the results in Fig. 7 are puzzling: For BG sequence*, the run
+time for nengo and nengo_ocl is even higher without probes (compared
+to Fig. 6), being well outside the 95% confidence intervals. This
+should be explained.
+
+6. Other comments on the discussion or the conclusions.
+-------------------------------------------------------
+
+As already mentioned for the Introduction, it would make the
+Discussion section much more balanced if the limitations of the
+approach would be discussed as well, together with some outlook to
+potential improvements or complementary approaches.
+
+Minor:
+
+- typo in line 373: "We believe that THE these benchmarks..."
+
+7. Please add here any further comments on this manuscript.
+-----------------------------------------------------------
+
+Overall, the article presents an attractive idea for benchmarking
+neuromorphic systems. In my opinion its main weakness is the lack of
+embedding in the current literature. Apart from that, it is a nice
+contribution to the field, and the open source code is a good
+opportunity for other neuromorphic system operators for benchmarking
+their systems.
+
+Minor:
+
+- missing citation details for Stewart et al. 2010
