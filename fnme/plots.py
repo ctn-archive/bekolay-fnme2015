@@ -16,9 +16,10 @@ results_dir = os.path.realpath(os.path.join(root, os.pardir, 'results'))
 noprobes_dir = os.path.join(results_dir, 'noprobes')
 results_dir = os.path.join(results_dir, 'probes')
 fig_dir = os.path.realpath(os.path.join(root, os.pardir, 'figures'))
-# Change if not on Mac OS X
-inkscape = os.path.expanduser("~/Applications/Inkscape.app/Contents"
-                              "/Resources/bin/inkscape")
+inkscape = "inkscape"
+# Uncomment if on Mac OS X
+# inkscape = os.path.expanduser("~/Applications/Inkscape.app/Contents"
+#                               "/Resources/bin/inkscape")
 
 onecolumn = 3.34646  # inches
 twocolumn = 7.08661  # inches
