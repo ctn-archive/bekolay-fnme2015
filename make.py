@@ -23,6 +23,28 @@ def task_reset():
                         'rm -rf ./results/noprobes']}
 
 
+def task_download_data():
+    """Downloads analyzed data from Figshare."""
+    def download_data(article_id):
+        import json
+        import requests
+        r = requests.get("http://api.figshare.com/v1/articles/" + article_id)
+        detail = json.loads(r.content)
+        for file_info in detail['items'][0]['files']:
+            outpath = os.path.join(root, file_info['name'])
+            if os.path.exists(outpath):
+                print("%s exists. Skipping." % outpath)
+                continue
+            with open(outpath, 'wb') as outf:
+                print("Downloading %s..." % outpath)
+                dl = requests.get(file_info['download_url'])
+                outf.write(dl.content)
+    return {'actions': [(download_data, ['1496569']),
+                        "unzip results.zip",
+                        "rm -f results.zip",
+                        "rm -rf __MACOSX"]}
+
+
 def task_paper():
     d = os.path.join(root, 'paper')
 
