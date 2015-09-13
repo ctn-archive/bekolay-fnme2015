@@ -311,7 +311,7 @@ def _test_sequence(Simulator, plt, seed, outfile, probes, prune_passthrough):
     T = 4.0
     seq_length = 6
 
-    with spa.SPA() as model:
+    with spa.SPA(seed=seed) as model:
         model.state = spa.Memory(dimensions=dimensions,
                                  subdimensions=subdimensions)
 
