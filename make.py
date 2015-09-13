@@ -101,22 +101,44 @@ def task_benchmarks():
 
 
 def task_figures():
+    figdir = os.path.join(root, 'figures')
+    plotdir = os.path.join(root, 'plots')
+    plotfile = os.path.join(root, 'fnme', 'plots.py')
+    benchfile = os.path.join(root, 'fnme', 'benchmarks.py')
+    figexts = ('pdf', 'svg', 'eps')
+    acc_plots = [os.path.join(plotdir, 'accuracy-%d.svg' % (i+1))
+                 for i in range(4)] + [os.path.join(
+                     plotdir, 'accuracy-4-pruned.svg')]
+    res_plots = [os.path.join(plotdir, 'results-%d.svg' % (i+1))
+                 for i in range(5)]
+
     yield {'name': 'models',
            'actions': [CmdAction(
                'py.test -p fnme.options --simulator nengo.Simulator '
                '--seed 5 --plot plots --noprofile -- fnme/benchmarks.py',
-               cwd=root)]}
+               cwd=root)],
+           'file_dep': [plotfile, benchfile],
+           'targets': res_plots}
     yield {'name': 'accuracy',
-           'actions': [(fnme.plots.accuracy,)]}
+           'actions': [(fnme.plots.accuracy,)],
+           'file_dep': [plotfile],
+           'targets': acc_plots}
     yield {'name': 'speed',
-           'actions': [(fnme.plots.speed, (True,))]}
+           'actions': [(fnme.plots.speed, (True,))],
+           'targets': [os.path.join(figdir, 'fig%d.%s' % (i, ext))
+                       for ext in figexts for i in range(5, 7)]}
     yield {'name': 'speed-np',
-           'actions': [(fnme.plots.speed, (False,))]}
+           'actions': [(fnme.plots.speed, (False,))],
+           'targets': [os.path.join(figdir, 'fig7.%s' % ext)
+                       for ext in figexts]}
     yield {'name': 'combine',
            'actions': [(fnme.plots.fig1,),
                        (fnme.plots.fig2,),
                        (fnme.plots.fig3,),
-                       (fnme.plots.fig4,)]}
+                       (fnme.plots.fig4,)],
+            'file_dep': acc_plots + res_plots,
+            'targets': [os.path.join(figdir, 'fig%d.%s' % (i, ext))
+                        for ext in figexts for i in range(1, 5)]}
 
 
 if __name__ == '__main__':
