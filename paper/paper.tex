@@ -81,10 +81,65 @@ Even once that effort is undertaken,
 benchmarks are often run a few times
 and then forgotten,
 quickly becoming obsolete.
-We propose that the Nengo test suite
+However, benchmarks can spur progress
+as tool developers have an objective
+metric to maximize or minimize.
+
+Prior work benchmarking neural simulators
+and neuromorphic hardware has focused
+on low-level neural performance.
+For example, \citet{sharp2013}
+showed that SpiNNaker can simulate
+a recurrent network of leaky integrate-and-fire neurons
+with similar firing rate and inter-spike intervals
+as the NEST neural simulator,
+but around six times faster.
+\citet{stromatias2013} showed that
+SpiNNaker's power consumption varies
+between 15 and 37 Watts
+(0.5--0.8 Watts per chip)
+depending on the number of neurons
+being simulated.
+\citet{goodman2008brian} showed that
+Brian simulated a randomly connected
+network of 4000 leaky integrate-and-fire
+twice as fast as an equivalent Matlab implementation,
+but around three times as slow as
+a C implementation.
+In all of these cases,
+none of the networks
+elicited activity that could be
+directly related to experimentally recorded data
+on a behavioral task.
+
+In contrast,
+\citet{ehrlich2010} and \citet{bruderle2011}
+have presented a set of benchmarks that target
+the FACETS neuromorphic system
+through the PyNN Python package.
+These benchmarks include
+an attractor-based memory model,
+a model of self-sustained AI states,
+and a Synfire Chain,
+all of which are
+directly related to neuroscientific experiments.
+We aim to build on this line of research
+and provide an unbiased,
+efficient, and future-proof set
+of benchmarks that focuses
+on high-level functional performance
+using Nengo instead of PyNN.
+We have previously shown that Nengo
+is an order of magnitude faster than
+the software simulators that PyNN targets
+\citep{bekolay2013},
+and have recently implemented backends
+that target neuromorphic hardware.
+
+In this study,
+we propose that the Nengo test suite
 can serve as an unbiased, efficient, and future-proof
 set of benchmarks for neuromorphic systems.
-
 Nengo is a rigorously tested software package
 for building and simulating
 large-scale neural models
@@ -164,7 +219,7 @@ that enable rapid benchmarking of neuromorphic systems.
 The first is a decoupling of model creation and simulation,
 resulting in a platform independent frontend interface
 to any backend that implements a certain set of requirements.
-The second is a ``fuzzy'' test suite that ensures
+The second is a functional test suite that ensures
 Nengo can be used to create models that solve cognitive tasks.
 The test suite makes ample use of test fixtures
 to enable data collection while testing on arbitrary backends.
@@ -284,9 +339,11 @@ The only parameter on the network
 is an optional integer seed;
 setting this should make
 all of the random factors
-in the model deterministic.
-Aside from managing the random seed,
-the network is responsible for maintaining
+in the model deterministic,
+which is important for testing
+and debugging models,
+but is not used for benchmarking.
+The network is also responsible for maintaining
 a network-specific set of default parameters
 for the four other objects.
 This results in shorter and less error-prone
@@ -351,9 +408,6 @@ in all of the parameters of all objects,
 solving for decoding weights and connection weights,
 setting up data structures for probed data,
 and so on.
-When parts of the model are randomly sampled,
-the random factors should become deterministic
-when a network's seed is set.
 
 The second method is \texttt{run},
 which advances the simulation
@@ -412,7 +466,7 @@ The details of how each backend
 implements the high-level frontend objects
 are out of the scope of this paper.
 
-\subsection{Fuzzy testing}
+\subsection{Functional testing}
 
 As of September 2015, Nengo's full test suite contains 643 tests.
 Many tests are unit tests
@@ -476,33 +530,8 @@ can be seen in Appendix~A.
 \subsubsection{Test fixtures}
 
 Nengo's test suite defines several test fixtures
-to support fuzzy testing
-that collects and visualizes performance metrics
+to support collecting and visualizing performance metrics
 on multiple backends.
-
-\paragraph{\texttt{rng} \& \texttt{seed}}
-enable deterministic testing despite
-all of the random factors that affect a model.
-Test functions that generate random values
-(as inputs to a model, for example)
-generate those values using \texttt{rng},
-which is a random number generator
-with an interface identical to
-NumPy's random module.
-When a test function creates a network,
-it passes in \texttt{seed} to make
-the random components
-of the frontend-to-backend translation deterministic.
-Importantly, these random components
-are seeded by hashing a string uniquely
-identifying each test function,
-ensuring that tolerances must be set
-wide enough that changing the seed
-should only rarely result in test failures.
-The hash function is also seeded
-with a global integer,
-which is changed periodically to ensure
-that tests have good tolerances.
 
 \paragraph{\texttt{Simulator}}
 allows tests to be run with multiple backends.
@@ -695,6 +724,16 @@ to start the oscillation,
 and provide a control signal
 to cause oscillation at
 2~Hz, 1~Hz, 0~Hz, -1~Hz, and -2~Hz.
+Negative frequencies indicate oscillations
+in the reverse direction.\footnote{There is some evidence
+  that neural oscillators such as locomotive central pattern generators
+  accomplish forward and backward locomotion
+  with the same neural mechanism \citep{duysens1998}.
+  While this does not mean that all neural oscillators must
+  be able to operate in the reverse direction,
+  we believe that the capability to traverse
+  the limit cycle forward and backward is advantageous,
+  and in the current design requires no additional neural resources.}
 In total, the model is comprised of 600 LIF neurons.
 This model tests each backend's ability
 to stably implement a dynamical system,
@@ -737,6 +776,22 @@ The basal ganglia makes liberal use
 of passthrough nodes,
 so we also test a version of the model
 with most passthrough nodes removed.
+
+We have used relatively small
+models run for short times in order
+to run many iterations on all backends.
+However, all of these models
+could be made significantly larger
+by increasing the number of neurons used
+(i.e., adjusting the \texttt{n\_neurons}
+parameter on ensembles),
+and increasing the dimensionality
+of the signals represented in the model.
+Additionally, existing tests
+of the semantic pointer architecture
+within Nengo use significantly more neurons
+than the models presented here,
+and could be adapted into benchmarks.
 
 \subsection{Backends tested}
 
@@ -805,6 +860,44 @@ this backend targets physical neuromorphic hardware,
 and therefore is concerned
 both with accuracy and speed.
 
+Unlike software backends,
+considerable effort is taken
+to translate a Nengo model into
+something that can run on a SpiNNaker board.
+Fortunately, SpiNNaker can be reprogrammed
+as it is composed of a large collection
+of chips, each with 18 ARM processing cores.
+In particular, this allows SpiNNaker
+to take advantage of Nengo's
+encoding and decoding capabilities,
+greatly reducing the amount of RAM needed
+\citep{mundy2015}.
+The SpiNNaker backends accomplishes this
+by using decoded values to determine
+changes to the input currents to each neuron,
+rather than using purely
+spike-based transmission.
+However, a previous implementation
+of a Nengo SpiNNaker backend
+\citep{galluppi2012}
+used primarily spike-based communication,
+only making an explicit signal-to-spike
+encoding at the beginning
+of the network and an explicit
+spike-to-signal decoding
+at the end of a network.
+Neuromorphic hardware that
+can only communicate through spikes
+can be made to interact with Nengo
+through explicit encoding and decoding processes
+like the one used in \citealp{galluppi2012},
+or by using Nengo on the host machine
+to explicitly generate spike patterns
+that are communicated to the device.
+However, these methods may introduce
+additional noise in the simulation,
+resulting in inaccuracies.
+
 \subsection{Benchmarking environment}
 
 All benchmarks were run 50 times
@@ -822,26 +915,59 @@ for the SpiNNaker benchmarks.
 
 The versions of software
 used for benchmarking can be found in
-Table~\ref{Tab:02}.
+Table~\ref{Tab:01}.
 
 \section{Results}
 
 \subsection{Compliance}
-
-Table~\ref{Tab:01} gives compliance results for
-all backends except the SpiNNaker backend,
-which is not yet set up to run the Nengo test suite.
-Of the four currently running unit tests,
-the OpenCL backend has the highest compliance
-(other than the reference backend).
+Table~\ref{Tab:02} gives compliance results for all backends.
+Compliance has been separated into tests
+that use a backend's default neuron type
+(leaky integrate-and-fire in all of the backends tested),
+and tests that are parameterized by neuron type.
+Of the non-reference backends,
+the OpenCL backend has the highest compliance.
 The distilled backend has lower compliance
 than OpenCL, which follows from its stated goal
 of being simple but not necessarily feature-rich.
-The Brainstorm backend is the least compliant,
-but it is still an early experimental test bed;
-this is not necessarily indicative of the
+The Brainstorm backend fails one more test
+than the distilled background;
+however, it is still an early experimental test bed,
+and is not necessarily indicative of the
 final Brainstorm hardware backend being
 less compliant than other backends.
+Finally, the SpiNNaker backend
+passes the fewest tests.
+
+It should be noted that these test suites
+are being run on the distilled, Brainstorm,
+and SpiNNaker backends for the first time in this study.
+In other words, these results are the first objective
+interrogation of each backend's feature set.
+In many cases, tests failed by backends
+are tests of features recently added
+to Nengo, such as stochastic processes
+for injecting current noise.
+As such, we expect compliance on all backends
+to rise quickly as backend developers
+implement these new features.
+The OpenCL backend has
+significantly higher compliance in large part
+because it is developed by the same
+group that develops the reference backend.
+However, there are some notable features
+missing from some backends,
+such as learning through plasticity rules
+applied to neuron-to-neuron connections,
+and implementation differences,
+such as one timestep delays on connections
+with no synaptic filter,
+that may remain even when backends
+are brought up to date with
+the reference implementation.
+It is likely that tests will be rewritten
+in the future to allow some implementation differences
+if they do not affect simulation accuracy.
 
 \subsection{Accuracy}
 
@@ -851,6 +977,38 @@ The boxplot shows that all five backends can
 implement this model accurately,
 despite five layers of processing
 that each introduce noise.
+The Brainstorm and distilled backends
+have the least variability
+and the SpiNNaker backend has the most variability,
+though the median RSME is the same across all backends.
+One driver of these differences
+is in how each backend implement synaptic filtering.
+The reference and OpenCL backends,
+for example,
+implement arbitrary linear time-invariant filters,
+of which the lowpass filter used in this model
+is a specific example.
+The Brianstorm and distilled backends
+only support lowpass filters,
+and therefore implement it
+more accurately.
+Another reason for these differences
+is in how each backend handles
+ensembles operating near the edge
+of their representational range
+(i.e., the radius of the ensemble).
+The outlier with highest RMSE represents
+a model instance in which the static vector target
+was at the extreme of the representational range;
+the SpiNNaker backend's relatively high RMSE
+on this example indicates that it
+may not perform as well as other backends
+in this situation.
+However, accuracy could be improved
+by increasing the representational range,
+though doing so may necessitate an increase
+in the number of evaluation points generated
+when solving for decoding weights.
 
 Figure~\ref{fig:02} gives accuracy results
 for the two-dimensional product model.
@@ -859,6 +1017,15 @@ perform well, the SpiNNaker backend
 is less accurate than the other four backends.
 Its performance, however, is still well within
 acceptable ranges for the two-dimensional product model.
+Again, the more generic synaptic filtering model
+used in the reference and OpenCL backends
+is the likely cause of increased variability
+on this model.
+It is also likely that performance at the extremes
+of the representational range
+is responsible for the SpiNNaker backend's
+reduced accuracy,
+though we have not investigated this in detail.
 
 Figure~\ref{fig:03} gives accuracy results
 for the controlled oscillator model.
@@ -869,6 +1036,13 @@ the same as the distilled and Brainstorm backends,
 but there are a high proportion of model instances
 with less accuracy than the median,
 as compared to other backends.
+In this example, differences in synaptic filtering
+are more pronounced than in previous examples,
+as the recurrent connection is responsible
+for the dynamics of the oscillation.
+This result indicates that the synaptic filtering model
+of SpiNNaker may also warrant closer examination
+for accuracy.
 
 Figure~\ref{fig:04} gives accuracy results
 for the basal ganglia sequence model.
@@ -890,6 +1064,17 @@ Its median transition time
 is around 47 milliseconds,
 and its interquartile range
 is indistinguishable from the other backends.
+The large difference between the two versions
+of this model for the SpiNNaker backend
+indicates that node-to-ensemble and
+ensemble-to-node connections
+introduce additional delays that are
+not present on other backends.
+This result is to be expected,
+as nodes can execute arbitrary code
+and are therefore difficult
+to simulate in real time
+with special purpose hardware.
 
 \subsection{Speed}
 
@@ -941,24 +1126,24 @@ this means that around one-sixth of the time taken
 for the \texttt{run} call is overhead
 when running this model for 10 seconds.
 
-Interestingly, while removing passthrough nodes
-results in significantly slower run times
-for the reference backend,
-it speeds up the OpenCL and SpiNNaker backends slightly.
+While passthrough nodes were removed
+in the basal ganglia sequence model
+for improved accuracy,
+it is interesting to note that speed
+is also impacted in this version of the model.
+While the distilled and Brainstorm backends
+are unaffected,
+both the SpiNNaker and OpenCL backends run faster
+when passthrough nodes are removed.
 This result indicates that passthrough nodes
-add to the overhead incurred by
-SpiNNaker and OpenCL.
-Other backends also incur overhead,
-especially when data is recorded
-through probes.
-We investigated the possibility
-that the overhead involved in probes
-dominated the run time for some backends.
-However, we found that
-removing probes from these models
-made very little impact on
-the total time taken in a \texttt{run} call
-(see Figure~\ref{fig:07}).
+contribute to SpiNNaker's overhead.
+The reference backend, on the other hand,
+runs slower,
+indicating that the computational costs
+of the additional connections introduced
+when removing passthrough nodes
+are greater than the costs of
+the passthrough nodes.
 
 \section{Discussion}
 
@@ -995,7 +1180,7 @@ these models are very small---each would only
 be a small component of a real large-scale model.
 Spaun, for example, includes multiple copies
 or larger versions of all four of the models
-benchmarked here.
+benchmarked here in its 2.5 million neuron network.
 Additionally, in this study, we run these models
 for very small amounts of time---the longest
 simulation runs for 10 simulated seconds.
@@ -1033,6 +1218,28 @@ and other sensory pathways,
 rather than focusing on
 a wider variety of functions
 and dynamics more generally.
+
+One inherent weakness of using Nengo
+as a standard platform for benchmarking
+neuromorphic systems is that new benchmarking
+capabilities may take a long time to
+be standardized and developed.
+If one wishes to add a new metric,
+such as power consumption
+(as was done in \citealp{stromatias2013}),
+we must first come to a consensus
+on a suitable interface to this information
+through Nengo.
+Once consensus is reached,
+it must be implemented and tested
+on all backends before
+benchmarks can be written using
+that quantity.
+Despite this limitation,
+we believe that it is possible to use
+Nengo to collect power consumption information,
+and plan to implement energy efficiency comparisons
+in future work.
 
 While we cannot claim that Nengo
 solves all of the complications that arise
@@ -1086,7 +1293,7 @@ the models accurately,
 with the OpenCL and SpiNNaker backends
 simulating the largest model much faster
 than the reference backend.
-We believe that the these benchmarks
+We believe that these benchmarks
 can be easily expanded upon
 to develop a suite of benchmarks
 that can be run by any neuromorphic hardware
@@ -1105,7 +1312,7 @@ All of the software packages discussed in this paper
 are available online,
 except for the Brainstorm backend,
 which has not yet been publicly released
-(see Table~\ref{Tab:02}).
+(see Table~\ref{Tab:01}).
 All of the benchmarks presented here,
 as well as the scripts used to generate
 the presented figures,
@@ -1186,16 +1393,16 @@ import numpy as np
 import nengo
 from nengo.utils.numpy import rmse
 
-def test_cchannelchain(Simulator, analytics, plt, rng, seed):
+def test_cchannelchain(Simulator, analytics, plt):
     # Parameters that can be varied to investigate extreme cases
     dims = 2
     layers = 5
     n_neurons = 100
     synapse = nengo.Lowpass(0.01)
 
-    with nengo.Network(seed=seed) as model:
+    with nengo.Network() as model:
         hypersphere = nengo.dists.UniformHypersphere()
-        value = hypersphere.sample(dims, 1, rng=rng).ravel()
+        value = hypersphere.sample(dims, 1).ravel()
         stim = nengo.Node(value)
 
         ens = [nengo.Ensemble(n_neurons, dimensions=dims)
@@ -1228,24 +1435,12 @@ def test_compare_cchannelchain(analytics_data, plt):
     plt.ylabel("RMSE")
 \end{lstlisting}
 
+\clearpage
+
 \section*{Figures}
 
 \begin{table}[!ht]
 \textbf{\refstepcounter{table}\label{Tab:01} Table \arabic{table}.}{
-  Compliance of four backends.}
-
-\processtable{ }
-{\begin{tabular}{lcc}\toprule
- Backend & Number of tests passed & Percentage of tests passed\\\midrule
- Reference (\texttt{nengo}) & 212 & 100\% \\
- OpenCL (\texttt{nengo\_ocl}) & 187 & 88.2\% \\
- Distilled (\texttt{nengo\_distilled}) & 129 & 60.8\% \\
- Brainstorm (\texttt{nengo\_brainstorm}) & 107 & 50.4\% \\\botrule
-\end{tabular}}{}
-\end{table}
-
-\begin{table}[!ht]
-\textbf{\refstepcounter{table}\label{Tab:02} Table \arabic{table}.}{
   Software versions used for benchmarking.
   The PyPI name is the unique identifier used for installing the Python package
   through the Python Package Index (PyPI). Packages can be found by
@@ -1260,6 +1455,33 @@ def test_compare_cchannelchain(analytics_data, plt):
  Brainstorm backend & Not available on PyPI & Development version, commit \texttt{ac3cfa708} \\
  SpiNNaker backend & \texttt{nengo\_spinnaker} & 0.2.4 \\
  NumPy & \texttt{numpy} & 1.8.1 \\\botrule
+\end{tabular}}{}
+\end{table}
+
+\begin{table}[!ht]
+\textbf{\refstepcounter{table}\label{Tab:02} Table \arabic{table}.}{
+  Compliance of the five backends. Compliance is the number of functional
+  tests passed by a particular backend. We have divided these tests into
+  tests parameterized by neuron type, and those not parameterized.
+  Non-parameterized tests are either designed to work with only
+  one neuron type, or use leaky integrate-and-fire (LIF) neurons,
+  which are implemented on all backends. For parameterized tests,
+  we have separated the compliance for those tests using LIF neurons,
+  which all backends implement, and for any additional neuron types
+  implemented. Since there are 31 parameterized tests, the maximum
+  compliance is 31 times the number of neuron types implemented.
+  The reference backend implements three additional neuron types,
+  while OpenCL, Distilled, and Brainstorm implement one additional neuron type,
+  and SpiNNaker only implements LIF neurons.}
+
+\processtable{ }
+{\begin{tabular}{lccc}\toprule
+ Backend & Non-parameterized tests passed & LIF tests passed & Other tests passed \\ \midrule
+ Reference (\texttt{nengo}) & 165 (100\%) & 31 (100\%) & 93 \\
+ OpenCL (\texttt{nengo\_ocl}) & 147 (89.0\%) & 29 (93.5\%) & 29 \\
+ Distilled (\texttt{nengo\_distilled}) & 95 (57.6\%) & 15 (48.4\%) & 15 \\
+ Brainstorm (\texttt{nengo\_brainstorm}) & 94 (57.0\%) & 15 (48.4\%) & 15 \\
+ SpiNNaker (\texttt{nengo\_spinnaker}) & 88 (53.3\%) & 7 (22.6\%) & 0 \\\botrule
 \end{tabular}}{}
 \end{table}
 
@@ -1282,8 +1504,9 @@ def test_compare_cchannelchain(analytics_data, plt):
          ensemble in the chain and the correct value (which is randomly
          selected on each trial), during the last 100 milliseconds of the
          500 millisecond simulation. The box shows the median and
-         interquartile range, while the whiskers extend to 1.5 times the
-         interquartile range; outliers are not shown.}
+         interquartile range, while the whiskers extend to the farthest
+         data point within 1.5 times the interquartile range;
+         outliers are shown above and below the whiskers.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1307,8 +1530,9 @@ def test_compare_cchannelchain(analytics_data, plt):
          range of inputs provided over 5 simulated seconds (after a 500
          millisecond wait period to allow the input ensemble to reach the
          correct initial state). The box shows the median and
-         interquartile range, while the whiskers extend to 1.5 times the
-         interquartile range; outliers are not shown.}
+         interquartile range, while the whiskers extend to the farthest
+         data point within 1.5 times the interquartile range;
+         outliers are shown above and below the whiskers.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1331,8 +1555,9 @@ def test_compare_cchannelchain(analytics_data, plt):
          computed on a pure sine wave oscillating at the induced frequency.
          Similarity is computed using a normalized dot product across
          all frequencies. The box shows the median and
-         interquartile range, while the whiskers extend to 1.5 times the
-         interquartile range; outliers are not shown.}
+         interquartile range, while the whiskers extend to the farthest
+         data point within 1.5 times the interquartile range;
+         outliers are shown above and below the whiskers.}
 \end{figure}
 
 \begin{figure}[!ht]
@@ -1355,8 +1580,9 @@ def test_compare_cchannelchain(analytics_data, plt):
          time to transition from one action to the next. The model is run
          for four seconds, allowing for approximately 90 transitions, depending
          on the transition time. The box shows the median and
-         interquartile range, while the whiskers extend to 1.5 times the
-         interquartile range; outliers are not shown.
+         interquartile range, while the whiskers extend to the farthest
+         data point within 1.5 times the interquartile range;
+         outliers are shown above and below the whiskers.
          (C) The aggregated accuracy results for 50 trials of
          each backend on the
          basal ganglia sequence model, with most passthrough nodes pruned.
@@ -1391,22 +1617,6 @@ def test_compare_cchannelchain(analytics_data, plt):
          BG Sequence * refers to the basal ganglia sequence model
          in which passthrough nodes have been removed.}
 
-\end{figure}
-
-\begin{figure}[!ht]
-\begin{center}
-  \includegraphics[width=85mm]{fig7}
-\end{center}
-\textbf{\refstepcounter{figure}\label{fig:07} Figure \arabic{figure}.}
-       {Run time for each model with probes removed on each backend.
-         Each bar represents the mean run time across 100 instances
-         of each model;
-         error bars are 95\% confidence intervals.
-         Run time is measured relative to real time;
-         e.g., a value of two indicates that the model ran twice as slow
-         as real time.
-         BG Sequence * refers to the basal ganglia sequence model
-         in which passthrough nodes have been removed.}
 \end{figure}
 
 \end{document}

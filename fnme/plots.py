@@ -128,7 +128,7 @@ def get_data(task, key, separate_cols=True, probes=True):
 def plot_summary(task, key, probes=True, figsize=None, rotation=0):
     setup(figsize=figsize)
     data = get_data(task, key, probes=probes)
-    sns.boxplot(data=data, showfliers=False)
+    sns.boxplot(data=data)
     plt.gca().set_xticklabels(data.columns, rotation=rotation)
 
 
