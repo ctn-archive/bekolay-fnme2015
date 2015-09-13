@@ -41,21 +41,21 @@ def task_paper():
 
 
 def task_compliance():
-    def run_tests(backend, pytest_args='', cwd='.'):
+    def run_tests(backend, pytest_args, cwd):
         result = '{}/results/{}.txt'.format(root, backend)
-        pytest = ('py.test --benchmarks --optional'
-                  ' {} > {}'.format(pytest_args, result))
+        pytest = ('py.test --neurons nengo.Direct,nengo.LIF --slow --plots '
+                  '--analytics -- {} > {}'.format(pytest_args, result))
         action = CmdAction(pytest, cwd=cwd)
         return {'name': backend,
                 'actions': ['rm -f {}'.format(result), action],
                 'targets': [result],
                 'uptodate': [check_timestamp_unchanged(cwd)]}
     yield run_tests('nengo_ocl', 'nengo_ocl/tests/test_sim_ocl.py',
-                    cwd=os.path.join(os.pardir, 'nengo_ocl'))
+                    os.path.join(os.pardir, 'nengo_ocl'))
     yield run_tests('nengo_distilled', 'nengo_distilled/tests/test_nengo.py',
-                    cwd=os.path.join(os.pardir, 'nengo_distilled'))
+                    os.path.join(os.pardir, 'nengo_distilled'))
     yield run_tests('nengo_brainstorm', 'nengo_brainstorm/tests/test_nengo.py',
-                    cwd=os.path.join(os.pardir, 'nef-chip-hardware'))
+                    os.path.join(os.pardir, 'nef-chip-hardware'))
 
 
 def task_benchmarks():

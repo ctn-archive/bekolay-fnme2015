@@ -110,8 +110,7 @@ def test_product(Simulator, plt, seed, outfile, probes):
         ens_direct = nengo.Node(output=lambda t, x: x[0] * x[1], size_in=2)
         nengo.Connection(stimulus, ens_direct)
         if probes:
-            probe_inp = nengo.Probe(
-                product_net.product.ensembles[0], synapse=0.005)
+            probe_inp = nengo.Probe(stimulus, synapse=0.005)
             probe_direct = nengo.Probe(ens_direct)
             probe_test = nengo.Probe(product_net.output, synapse=0.005)
 

@@ -1,8 +1,9 @@
+requests==2.7.0
 numpy==1.9.2
-scipy==0.15.1
+scipy==0.16.0
 matplotlib==1.4.3
-ipython[all]==3.0.0
-doit==0.27.0
-pytest==2.6.4
-nengo  # local 2.1.0-dev for now
-nengo-reference  # local 0.0.1 for now
+jupyter==1.0.0
+doit==0.29.0
+pytest==2.7.2
+seaborn==0.6.0
+pandas==0.16.2

@@ -99,7 +99,7 @@ def get_data(task, key, separate_cols=True, probes=True):
         data = OrderedDict()
     else:
         data = []
-    dirs = [d for d in os.listdir(data_dir)
+    dirs = [d for d in sorted(os.listdir(data_dir))
             if '.sim' in d]
     sims = [os.path.basename(d).split('.')[0] for d in dirs]
 
@@ -211,6 +211,11 @@ def speed(probes=True):
     inset = zoomed_inset_axes(plt.gca(), 0.38,
                               bbox_to_anchor=(0.6, 0.98),
                               bbox_transform=plt.gcf().transFigure)
+
+    # Have to remove non-BG models before plotting inset
+    run = run[run['Model'] != "Chained channels"]
+    run = run[run['Model'] != "Product"]
+    run = run[run['Model'] != "Oscillator"]
     sns.barplot(x='Model', y='runtime', hue='Backend',
                 data=run, ax=inset, order=model_order)
     plt.axhline(1.0, lw=1, c='k', ls=':')
