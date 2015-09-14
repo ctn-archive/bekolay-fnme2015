@@ -295,6 +295,11 @@ efficiency information in future work. Lines 416-422 now read:
 > Nonetheless, this work provides a substantive proposal to begin
 > evaluating neuromorphic neural simulators.
 
+Thank you for your feedback and helpful suggestions!
+This is definitely just an initial step,
+and we hope that we will be able to collect benchmark models
+from many different researchers.
+
 Reviewer 2
 ==========
 
@@ -401,7 +406,7 @@ it across all backends) on lines 416-422. It reads:
 >   be required.
 
 This is an excellent point that we really should have addressed
-in the initial submission. The paper that we cited in the section
+in the initial submission. The paper that we cited in section
 on the SpiNNaker backend (Mundy et al., 2015) gives a detailed
 account of how SpiNNaker uses decoded values to change the
 input currents to individual neurons, and two prior publications
@@ -474,12 +479,11 @@ see lines 255-259 which read:
   We have used relatively small models run for short times in order to
   run many iterations on all backends.  However, all of these models
   could be made significantly larger by increasing the number of
-  neurons used (i.e., adjusting the \texttt{n\_neurons} parameter on
-  ensembles), and increasing the dimensionality of the signals
-  represented in the model.  Additionally, existing tests of the
-  semantic pointer architecture within Nengo use significantly more
-  neurons than the models presented here, and could be adapted into
-  benchmarks.
+  neurons used (i.e., adjusting the n_neurons parameter on ensembles),
+  and increasing the dimensionality of the signals represented in the
+  model.  Additionally, existing tests of the semantic pointer
+  architecture within Nengo use significantly more neurons than the
+  models presented here, and could be adapted into benchmarks.
 
 > Minor:
 >
@@ -680,3 +684,7 @@ Corrected, thank you!
 Corrected, thank you! In correcting this, we noticed that
 Mundy et al., 2015 was also missing details,
 which have been filled in.
+
+Also thank you for all of your feedback!
+We feel that the manuscript is now much stronger
+thanks to the additions in response to your feedback.
