@@ -338,8 +338,8 @@ They read:
   chip) depending on the number of neurons being simulated.
   \citet{goodman2008brian} showed that Brian simulated a randomly
   connected network of 4000 leaky integrate-and-fire twice as fast as
-  an equivalent Matlab implementation, but around three times as slow
-  as a C implementation.  In all of these cases, none of the networks
+  an equivalent Matlab implementation, but around three times slower
+  than a C implementation. In all of these cases, none of the networks
   elicited activity that could be directly related to experimentally
   recorded data on a behavioral task.
 
@@ -607,6 +607,9 @@ boxplots more useful.
 > run time for nengo and nengo_ocl is even higher without probes
 > (compared to Fig. 6), being well outside the 95% confidence
 > intervals. This should be explained.
+
+Reviewer 1 noticed this effect as well.
+Our reply was as follows:
 
 We did not notice the slowdown upon initial submission,
 so seeing this was puzzling to us as well.

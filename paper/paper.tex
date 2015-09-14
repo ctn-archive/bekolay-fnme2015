@@ -104,7 +104,7 @@ being simulated.
 Brian simulated a randomly connected
 network of 4000 leaky integrate-and-fire
 twice as fast as an equivalent Matlab implementation,
-but around three times as slow as
+but around three times slower than
 a C implementation.
 In all of these cases,
 none of the networks
@@ -877,23 +877,15 @@ by using decoded values to determine
 changes to the input currents to each neuron,
 rather than using purely
 spike-based transmission.
-However, a previous implementation
-of a Nengo SpiNNaker backend
-\citep{galluppi2012}
-used primarily spike-based communication,
-only making an explicit signal-to-spike
-encoding at the beginning
-of the network and an explicit
-spike-to-signal decoding
-at the end of a network.
-Neuromorphic hardware that
+However, neuromorphic hardware that
 can only communicate through spikes
 can be made to interact with Nengo
 through explicit encoding and decoding processes
-like the one used in \citealp{galluppi2012},
+on the chip, as was done in \citealp{galluppi2012},
 or by using Nengo on the host machine
 to explicitly generate spike patterns
-that are communicated to the device.
+that are communicated to the device,
+as was done in \citealp{choudhary2012}.
 However, these methods may introduce
 additional noise in the simulation,
 resulting in inaccuracies.
