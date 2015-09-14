@@ -982,17 +982,6 @@ have the least variability
 and the SpiNNaker backend has the most variability,
 though the median RSME is the same across all backends.
 One driver of these differences
-is in how each backend implement synaptic filtering.
-The reference and OpenCL backends,
-for example,
-implement arbitrary linear time-invariant filters,
-of which the lowpass filter used in this model
-is a specific example.
-The Brianstorm and distilled backends
-only support lowpass filters,
-and therefore implement it
-more accurately.
-Another reason for these differences
 is in how each backend handles
 ensembles operating near the edge
 of their representational range
@@ -1004,10 +993,17 @@ the SpiNNaker backend's relatively high RMSE
 on this example indicates that it
 may not perform as well as other backends
 in this situation.
-However, accuracy could be improved
-by increasing the representational range,
-though doing so may necessitate an increase
-in the number of evaluation points generated
+The SpiNNaker backend uses
+signed fixed point numbers
+with 16 digits before the decimal point,
+and 15 digits after the decimal point;
+accuracy could be improved
+by optimizing the backend's
+internal calculations to use as
+many digits as possible.
+For all backends, accuracy could be improved
+by increasing the representational range
+and increasing the number of evaluation points generated
 when solving for decoding weights.
 
 Figure~\ref{fig:02} gives accuracy results
@@ -1017,15 +1013,15 @@ perform well, the SpiNNaker backend
 is less accurate than the other four backends.
 Its performance, however, is still well within
 acceptable ranges for the two-dimensional product model.
-Again, the more generic synaptic filtering model
-used in the reference and OpenCL backends
-is the likely cause of increased variability
-on this model.
-It is also likely that performance at the extremes
+Again, it is likely that performance at the extremes
 of the representational range
 is responsible for the SpiNNaker backend's
 reduced accuracy,
 though we have not investigated this in detail.
+This benchmark also suggests that
+the reference and OpenCL backends
+have more variability than other backends,
+particularly the Brainstorm and distilled backends.
 
 Figure~\ref{fig:03} gives accuracy results
 for the controlled oscillator model.
@@ -1036,13 +1032,15 @@ the same as the distilled and Brainstorm backends,
 but there are a high proportion of model instances
 with less accuracy than the median,
 as compared to other backends.
-In this example, differences in synaptic filtering
+In this example, differences in how each backend
+implements synaptic filtering
 are more pronounced than in previous examples,
 as the recurrent connection is responsible
 for the dynamics of the oscillation.
-This result indicates that the synaptic filtering model
-of SpiNNaker may also warrant closer examination
-for accuracy.
+Relatively large variability in the
+reference, OpenCL and SpiNNaker backends
+suggests that their synaptic filtering implementations
+should be examined for potential accuracy improvements.
 
 Figure~\ref{fig:04} gives accuracy results
 for the basal ganglia sequence model.
@@ -1173,6 +1171,10 @@ is less accurate than other backends,
 though we suspect that its
 lack of floating point hardware
 may be responsible.
+We also plan to investigate
+why the reference and OpenCL backends
+have higher variability than other backends on
+the simple feedforward models.
 
 It should be noted that although there are clear
 relative speed differences between backends,
