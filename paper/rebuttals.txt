@@ -46,14 +46,14 @@ You are completely correct that this comment is not sufficient.
 A technical answer would be that SpiNNaker has a lot of
 set up and tear down code, which makes running the test suite
 slow and error-prone. The tests creates a large number of
-small models and runs them for small amounts of time;
+small models and run them for small amounts of time;
 this results in the SpiNNaker boards' memory filling up with
-improperly freed resources. So, the real answer is more a
-time management one; we decided that getting the unit tests
+improperly freed resources. The real answer is a matter of
+time management; we decided that getting the unit tests
 running would take too much time for this paper.
 However, this answer is not very satisfying, so we have
 put in the time to run the test suite with the SpiNNaker
-backend. Table 1 (now Table 2) now also gives results
+backend. Table 1 (Table 2 in the revised version) now gives results
 for the SpiNNaker backend, and the text has been updated
 accordingly.
 
@@ -68,7 +68,7 @@ accordingly.
 > "significant" is a strong claim and should be clarified.
 
 Good point. We used 'significant' colloquially here and
-have reworded this paragraph; it now reads:
+have therefore reworded the paragraph; it now reads:
 
   While passthrough nodes were removed in the basal ganglia sequence
   model for improved accuracy, it is interesting to note that speed is
@@ -119,7 +119,7 @@ in which no probes exist. After implementing
 two such optimizations, we were able to consistently
 achieve identical performance with probes and without.
 However, it was not our intention to perform
-a detailed comparison of the affect of probes
+a detailed comparison of the effect of probes
 on runtimes, and we feel that including Figure 7
 (which only had a few sentences of text associated with it)
 was more distracting than illuminating.
@@ -166,8 +166,8 @@ also added a footnote with a citation to Duysens and Van de Crommert, 1998,
 which provides some evidence that locomotive CPGs may run in reverse
 for backward locomotion.
 
-In terms of why the range -2 to 2 was chosen,
-this was because we have used oscillators of these frequencies
+We chose the range of -2 to 2
+because we have used oscillators of these frequencies
 in previous models. In line 219 we note that
 "We test each model with parameters typically used
 in large-scale models, but make these parameterized models
@@ -201,7 +201,7 @@ has been updated. It now reads:
   additional neuron type, and SpiNNaker only implements LIF neurons.
 
 Additionally, a paragraph explaining common failure cases
-is included in the main text in lines 311-321. It reads:
+is included in the main text in lines 309-319. It reads:
 
   It should be noted that these test suites are being run on the
   distilled, Brainstorm, and SpiNNaker backends for the first time in
@@ -211,16 +211,16 @@ is included in the main text in lines 311-321. It reads:
   such as stochastic processes for injecting current noise.  As such,
   we expect compliance on all backends to rise quickly as backend
   developers implement these new features.  The OpenCL backend has
-  significantly higher compliance in large part because it is
-  developed by the same group that develops the reference backend.
-  However, there are some notable features missing from some backends,
-  such as learning through plasticity rules applied to
-  neuron-to-neuron connections, and implementation differences, such
-  as one timestep delays on connections with no synaptic filter, that
-  may remain even when backends are brought up to date with the
-  reference implementation.  It is likely that tests will be rewritten
-  in the future to allow some implementation differences if they do
-  not affect simulation accuracy.
+  higher compliance in large part because it is developed by the same
+  group that develops the reference backend.  However, there are some
+  notable features missing from some backends, such as learning
+  through plasticity rules applied to neuron-to-neuron connections,
+  and implementation differences, such as one timestep delays on
+  connections with no synaptic filter, that may remain even when
+  backends are brought up to date with the reference implementation.
+  It is likely that tests will be rewritten in the future to allow
+  some implementation differences if they do not affect simulation
+  accuracy.
 
 5. Other comments on the discussion or the conclusions.
 -------------------------------------------------------
@@ -255,19 +255,20 @@ must be implemented on all backends.
 
 We have a paragraph to the discussion section
 to discuss this issue, and to register our desire to collect
-efficiency information in future work. Lines 417-423 now read:
+efficiency information in future work. Lines 416-422 now read:
 
   One inherent weakness of using Nengo as a standard platform for
   benchmarking neuromorphic systems is that new benchmarking
-  capabilities may take a long time to be standardized and developed.
-  If one wishes to add a new metric, such as power consumption, we
-  must first come to a consensus on a suitable interface to this
-  information through Nengo.  Once consensus is reached, it must be
-  implemented and tested on all backends before benchmarks can be
-  written using that quantity.  Despite this limitation, we believe
-  that it is possible to use Nengo to collect power consumption
-  information, and plan to implement efficiency comparisons in future
-  work.
+  capabilities may take a long time to be standardized and
+  developed. If one wishes to add a new metric, such as power
+  consumption (as was done in Stromatias et al., 2013), we must first
+  come to a consensus on a suitable interface to this information
+  through Nengo. Once consensus is reached, it must be implemented and
+  tested on all backends before benchmarks can be written using that
+  quantity. Despite this limitation, we believe that it is possible to
+  use Nengo to collect power consumption information, and plan to
+  implement energy efficiency comparisons in future work.
+
 
 6. Please add here any further comments on this manuscript.
 --------------------------------------------------------
@@ -325,25 +326,25 @@ Reviewer 2
 
 We have added two paragraphs to the introduction citing prior work
 benchmarking SpiNNaker, FACETS, and Brian,
-and situating this study in that context in lines 19-35.
+and situating this study in that context on lines 19-35.
 They read:
 
   Prior work benchmarking neural simulators and neuromorphic hardware
-  has focused on low-level neural performance.  For example,
-  \citet{sharp2013} showed that SpiNNaker can simulate a recurrent
-  network of leaky integrate-and-fire neurons with similar firing rate
-  and inter-spike intervals as the NEST neural simulator, but around
-  six times faster.  \citet{stromatias2013} showed that SpiNNaker's
+  has focused on low-level neural performance.  For example, Sharp and
+  Furber (2013) showed that SpiNNaker can simulate a recurrent network
+  of leaky integrate-and-fire neurons with similar firing rate and
+  inter-spike intervals as the NEST neural simulator, but around six
+  times faster.  Stromatias et al. (2013) showed that SpiNNaker's
   power consumption varies between 15 and 37 Watts (0.5--0.8 Watts per
-  chip) depending on the number of neurons being simulated.
-  \citet{goodman2008brian} showed that Brian simulated a randomly
-  connected network of 4000 leaky integrate-and-fire twice as fast as
-  an equivalent Matlab implementation, but around three times slower
-  than a C implementation. In all of these cases, none of the networks
+  chip) depending on the number of neurons being simulated.  Goodman
+  and Brette (2008) showed that Brian simulated a randomly connected
+  network of 4000 leaky integrate-and-fire twice as fast as an
+  equivalent Matlab implementation, but around three times slower than
+  a C implementation. In all of these cases, none of the networks
   elicited activity that could be directly related to experimentally
   recorded data on a behavioral task.
 
-  In contrast, \citet{ehrlich2010} and \citet{bruderle2011} have
+  In contrast, Ehrlich et al. (2010) and Bruderle et al. (2011) have
   presented a set of benchmarks that target the FACETS neuromorphic
   system through the PyNN Python package.  These benchmarks include an
   attractor-based memory model, a model of self-sustained AI states,
@@ -353,7 +354,7 @@ They read:
   benchmarks that focuses on high-level functional performance using
   Nengo instead of PyNN.  We have previously shown that Nengo is an
   order of magnitude faster than the simulators that PyNN targets
-  \citep{bekolay2013}, and have recently implemented backends that
+  (Bekolay et al., 2013), and have recently implemented backends that
   target neuromorphic hardware.
 
 3. Other comments on the introduction.
@@ -368,19 +369,19 @@ We have added a paragraph to the discussion noting that Nengo's
 standards-based development and frontend-backend separation mean that
 development can be slow (e.g., collecting power consumption
 would mean figuring out a standard for this and then implementing
-it across all backends) in lines 417-423. It reads:
+it across all backends) on lines 416-422. It reads:
 
   One inherent weakness of using Nengo as a standard platform for
   benchmarking neuromorphic systems is that new benchmarking
-  capabilities may take a long time to be standardized and developed.
-  If one wishes to add a new metric, such as power consumption (as was
-  done in \citealp{stromatias2013}), we must first come to a consensus
-  on a suitable interface to this information through Nengo.  Once
-  consensus is reached, it must be implemented and tested on all
-  backends before benchmarks can be written using that quantity.
-  Despite this limitation, we believe that it is possible to use Nengo
-  to collect power consumption information, and plan to implement
-  energy efficiency comparisons in future work.
+  capabilities may take a long time to be standardized and
+  developed. If one wishes to add a new metric, such as power
+  consumption (as was done in Stromatias et al., 2013), we must first
+  come to a consensus on a suitable interface to this information
+  through Nengo. Once consensus is reached, it must be implemented and
+  tested on all backends before benchmarks can be written using that
+  quantity. Despite this limitation, we believe that it is possible to
+  use Nengo to collect power consumption information, and plan to
+  implement energy efficiency comparisons in future work.
 
 4. Other comments on the materials and methods.
 -----------------------------------------------
@@ -403,36 +404,33 @@ This is an excellent point that we really should have addressed
 in the initial submission. The paper that we cited in the section
 on the SpiNNaker backend (Mundy et al., 2015) gives a detailed
 account of how SpiNNaker uses decoded values to change the
-input currents to individual neurons, and a prior publication
-(Galluppi et al., 2012, which is now cited) describes a process
+input currents to individual neurons, and two prior publications
+(Galluppi et al., 2012 and Choudhary et al., 2012) describe processes
 to implement Nengo with primarily spike-based communication
-on SpiNNaker. We have added a paragraph to the Methods section
+on SpiNNaker and Neurogrid, respectively.
+We have added a paragraph to the Methods section
 with brief descriptions of how SpiNNaker handles currents,
 and how other neuromorphic hardware can be made to handle
-currents from Nengo as well in lines 285-297.
+currents from Nengo as well in lines 285-295.
 The paragraph reads:
 
   Unlike software backends, considerable effort is taken to translate
-  a Nengo model into something that can run on a SpiNNaker board.
-  Fortunately, SpiNNaker can be reprogrammed as it is composed of a
-  large collection of chips, each with 18 ARM processing cores.  In
-  particular, this allows SpiNNaker to take advantage of Nengo's
+  a Nengo model into something that can run on a SpiNNaker
+  board. Fortunately, SpiNNaker can be reprogrammed as it is composed
+  of a large collection of chips, each with 18 ARM processing
+  cores. Notably, this allows SpiNNaker to take advantage of Nengo’s
   encoding and decoding capabilities, greatly reducing the amount of
-  RAM needed \citep{mundy2015}.  The SpiNNaker backends accomplishes
+  RAM needed (Mundy et al., 2015). The SpiNNaker backend accomplishes
   this by using decoded values to determine changes to the input
-  currents to each neuron, rather than using purely spike-based
-  transmission.  However, a previous implementation of a Nengo
-  SpiNNaker backend \citep{galluppi2012} used primarily spike-based
-  communication, only making an explicit signal-to-spike encoding at
-  the beginning of the network and an explicit spike-to-signal
-  decoding at the end of a network.  Neuromorphic hardware that can
-  only communicate through spikes can be made to interact with Nengo
-  through explicit encoding and decoding processes like the one used
-  in \citealp{galluppi2012}, or by using Nengo on the host machine to
-  explicitly generate spike patterns that are communicated to the
-  device.  However, these methods may introduce additional noise in
-  the simulation, resulting in inaccuracies.
-
+  currents of each neuron, rather than using purely spike-based
+  transmission. However, neuromorphic hardware that can only
+  communicate through spikes can be made to interact with Nengo
+  through explicit encoding and decoding processes on the chip, as was
+  done in Galluppi et al. (2012), or by using Nengo on the host
+  machine to explicitly generate spike patterns that are communicated
+  to the device, as was done in Choudhary et al. (2012). However,
+  these methods may introduce additional noise in the simulation,
+  resulting in inaccuracies.
 
 > - At several points, the authors mention that seeds can be set
 >   explicitely for deterministic experiment runs. Is there a reason
@@ -454,8 +452,7 @@ However, in general, it is true that setting seeds is not important
 for benchmarking. For this reason, we have removed the mentions
 of setting seeds, including references to the `rng` and `seed`
 fixtures. We have kept one reference in the Background section discussing
-the frontend interface, but have  reworded that it slightly;
-it now reads:
+the frontend interface, but have reworded it slightly; it now reads:
 
   The only parameter on the network is an optional integer seed;
   setting this should make all of the random factors in the model
@@ -468,10 +465,10 @@ it now reads:
 >   and/or the possibility to scale up the present benchmarks would be
 >   desirable.
 
-We have added an explicit mention of the size of Spaun on lines 401-402
+We have added an explicit mention of the size of Spaun on lines 400-401
 (since Spaun is built with Nengo and shows that it is possible
 to generate large networks). We have also added a short paragraph
-to the Test models subsection discussing larger models;
+to the Test Models subsection discussing larger models;
 see lines 255-259 which read:
 
   We have used relatively small models run for short times in order to
@@ -520,13 +517,13 @@ Thank you, this has been corrected.
 We have added additional details in the section 4.2 on accuracy.
 These additional details are listed below.
 
-Briefly, we do not have a satisfying explanation
-of why the reference backend shows higher variability than
+Unfortunately, we do not have a satisfying explanation
+for why the reference backend shows higher variability than
 the Brainstorm and distilled backends.
 We discuss this briefly in the additional details below
 and have added a sentence to the discussion
 indicating that we will examine this result in the future
-(lines 398-399: "We also plan to investigate
+(lines 395-397: "We also plan to investigate
 why the reference and OpenCL backends
 have higher variability than other backends on
 the simple feedforward models.")
@@ -534,8 +531,8 @@ the simple feedforward models.")
 We are still in the progress of investigating the deviations
 in the SpiNNaker backend; however, we are collaborating with
 the SpiNNaker group to improve accuracy on these examples.
-The 1ms time step is not the issue here, however,
-as all of the backends tested use a 1ms time step.
+The 1 ms time step is not the issue here, however,
+as all of the backends tested use a 1 ms time step.
 
 Figure 1:
 
@@ -562,8 +559,7 @@ Figure 2:
   representational range is responsible for the SpiNNaker backend's
   reduced accuracy, though we have not investigated this in detail.
   This benchmark also suggests that the reference and OpenCL backends
-  have more variability than other backends, particularly the
-  Brainstorm and distilled backends.
+  have more variability than the Brainstorm and distilled backends.
 
 Figure 3:
 
@@ -597,7 +593,7 @@ as follows:
   extend to the farthest data point within 1.5 times the interquartile
   range; outliers are shown above and below the whiskers.
 
-As noted in these captions, we have also now included the outliers.
+As noted in the revised captions, we have also now included the outliers.
 We were initially concerned that outliers would make the rest of the
 boxplot too small relative to the expanded axes caused by outliers.
 However, we now feel that including all of the data makes these
@@ -642,7 +638,7 @@ in which no probes exist. After implementing
 two such optimizations, we were able to consistently
 achieve identical performance with probes and without.
 However, it was not our intention to perform
-a detailed comparison of the affect of probes
+a detailed comparison of the effect of probes
 on runtimes, and we feel that including Figure 7
 (which only had a few sentences of text associated with it)
 was more distracting than illuminating.
@@ -659,7 +655,7 @@ For these reasons, we have removed Figure 7 in this revision.
 As previously mentioned, we added in a paragraph to the discussion
 on the primary weakness of the approach.
 This paragraph also includes a potential improvement:
-collecting power consumption information (lines 417-423).
+collecting power consumption information (lines 416-422).
 
 > Minor:
 >

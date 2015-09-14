@@ -91,7 +91,7 @@ on low-level neural performance.
 For example, \citet{sharp2013}
 showed that SpiNNaker can simulate
 a recurrent network of leaky integrate-and-fire neurons
-with similar firing rate and inter-spike intervals
+with similar firing rates and inter-spike intervals
 as the NEST neural simulator,
 but around six times faster.
 \citet{stromatias2013} showed that
@@ -538,7 +538,7 @@ allows tests to be run with multiple backends.
 As detailed in Section~\ref{Sec:Backend},
 each backend must expose a simulator class
 that accepts a network.
-Every test uses this test fixture rather than
+Every functional test uses this test fixture rather than
 an actual class so that
 the backend-specific simulator class is used
 when the test is run.
@@ -867,25 +867,25 @@ something that can run on a SpiNNaker board.
 Fortunately, SpiNNaker can be reprogrammed
 as it is composed of a large collection
 of chips, each with 18 ARM processing cores.
-In particular, this allows SpiNNaker
+Notably, this allows SpiNNaker
 to take advantage of Nengo's
 encoding and decoding capabilities,
 greatly reducing the amount of RAM needed
 \citep{mundy2015}.
-The SpiNNaker backends accomplishes this
+The SpiNNaker backend accomplishes this
 by using decoded values to determine
-changes to the input currents to each neuron,
+changes to the input currents of each neuron,
 rather than using purely
 spike-based transmission.
 However, neuromorphic hardware that
 can only communicate through spikes
 can be made to interact with Nengo
 through explicit encoding and decoding processes
-on the chip, as was done in \citealp{galluppi2012},
+on the chip, as was done in \citet{galluppi2012},
 or by using Nengo on the host machine
 to explicitly generate spike patterns
 that are communicated to the device,
-as was done in \citealp{choudhary2012}.
+as was done in \citet{choudhary2012}.
 However, these methods may introduce
 additional noise in the simulation,
 resulting in inaccuracies.
@@ -944,7 +944,7 @@ As such, we expect compliance on all backends
 to rise quickly as backend developers
 implement these new features.
 The OpenCL backend has
-significantly higher compliance in large part
+higher compliance in large part
 because it is developed by the same
 group that develops the reference backend.
 However, there are some notable features
@@ -1012,8 +1012,7 @@ reduced accuracy,
 though we have not investigated this in detail.
 This benchmark also suggests that
 the reference and OpenCL backends
-have more variability than other backends,
-particularly the Brainstorm and distilled backends.
+have more variability than the Brainstorm and distilled backends.
 
 Figure~\ref{fig:03} gives accuracy results
 for the controlled oscillator model.
@@ -1021,9 +1020,8 @@ The reference and OpenCL backends perform well here,
 as do the distilled and Brainstorm backends.
 The median accuracy of the SpiNNaker is
 the same as the distilled and Brainstorm backends,
-but there are a high proportion of model instances
-with less accuracy than the median,
-as compared to other backends.
+but model instances with less accuracy than the median
+perform poorly compared to other backends.
 In this example, differences in how each backend
 implements synaptic filtering
 are more pronounced than in previous examples,
@@ -1365,6 +1363,8 @@ We thank the Brainstorm group
 at Stanford University for making
 their experimental hardware emulation backend
 available to us.
+Finally, we thank our two reviewers for
+their helpful feedback and recommendations.
 
 \paragraph{Funding\textcolon}
 NSERC Graduate Fellowships,
