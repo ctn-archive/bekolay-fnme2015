@@ -124,13 +124,9 @@ def task_figures():
            'file_dep': [plotfile],
            'targets': acc_plots}
     yield {'name': 'speed',
-           'actions': [(fnme.plots.speed, (True,))],
+           'actions': [fnme.plots.speed],
            'targets': [os.path.join(figdir, 'fig%d.%s' % (i, ext))
                        for ext in figexts for i in range(5, 7)]}
-    yield {'name': 'speed-np',
-           'actions': [(fnme.plots.speed, (False,))],
-           'targets': [os.path.join(figdir, 'fig7.%s' % ext)
-                       for ext in figexts]}
     yield {'name': 'combine',
            'actions': [(fnme.plots.fig1,),
                        (fnme.plots.fig2,),

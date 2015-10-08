@@ -55,7 +55,6 @@ def add_speed_profiling(Simulator):
 
 _Simulator = None
 outdir = None
-_probes = True
 _profile = True
 
 
@@ -74,22 +73,11 @@ def pytest_configure(config):
         # Change up the seed to get new networks
         nengo.tests.conftest.test_seed = config.getoption('seed')[0]
 
-    global _probes
-    _probes = config.getoption('noprobes')
-
     global outdir
-    if _probes:
-        outdir = "results/probes/%s" % _Simulator.__module__
-    else:
-        outdir = "results/noprobes/%s" % _Simulator.__module__
+    outdir = "results/probes/%s" % _Simulator.__module__
 
     if not os.path.exists(outdir):
         os.makedirs(outdir)
-
-
-@pytest.fixture
-def probes():
-    return _probes
 
 
 def load_class(fully_qualified_name):

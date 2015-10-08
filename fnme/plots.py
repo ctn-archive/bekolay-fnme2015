@@ -13,7 +13,6 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset, zoomed_inset_axes
 root = os.path.dirname(__file__)
 plots_dir = os.path.realpath(os.path.join(root, os.pardir, 'plots'))
 results_dir = os.path.realpath(os.path.join(root, os.pardir, 'results'))
-noprobes_dir = os.path.join(results_dir, 'noprobes')
 results_dir = os.path.join(results_dir, 'probes')
 fig_dir = os.path.realpath(os.path.join(root, os.pardir, 'figures'))
 inkscape = "inkscape"
@@ -93,8 +92,8 @@ def save(fname, fig=False):
         plt.savefig(os.path.join(plots_dir, "%s.svg" % fname))
 
 
-def get_data(task, key, separate_cols=True, probes=True):
-    data_dir = results_dir if probes else noprobes_dir
+def get_data(task, key, separate_cols=True):
+    data_dir = results_dir
 
     if separate_cols:
         data = OrderedDict()
@@ -125,9 +124,9 @@ def get_data(task, key, separate_cols=True, probes=True):
         return pd.DataFrame(data, columns=['Backend', key])
 
 
-def plot_summary(task, key, probes=True, figsize=None, rotation=0):
+def plot_summary(task, key, figsize=None, rotation=0):
     setup(figsize=figsize)
-    data = get_data(task, key, probes=probes)
+    data = get_data(task, key)
     sns.boxplot(data=data)
     plt.gca().set_xticklabels(data.columns, rotation=rotation)
 
@@ -156,7 +155,7 @@ def accuracy():
     save("accuracy-4-pruned")
 
 
-def speed(probes=True):
+def speed():
     def get_all_data(key, d_args, scale_to_realtime=False):
         t1 = get_data("cchannelchain", key, **d_args)
         t1['Model'] = "Chained channels"
@@ -183,21 +182,20 @@ def speed(probes=True):
                    "BG sequence *"]
 
     # Only get build speed for probed data
-    if probes:
-        build = get_all_data("buildtime",
-                             {'separate_cols': False, 'probes': probes})
+    build = get_all_data("buildtime",
+                         {'separate_cols': False})
 
-        setup(figsize=(onecolumn * 2, 3.0))
-        ax = plt.subplot(1, 1, 1)
-        sns.barplot(x='Model', y='buildtime', hue='Backend',
-                    data=build, ax=ax, order=model_order)
-        plt.ylabel("Build time (s)")
-        plt.xlabel("")
-        save("fig5", fig=True)
-        svg2other("fig5")
+    setup(figsize=(onecolumn * 2, 3.0))
+    ax = plt.subplot(1, 1, 1)
+    sns.barplot(x='Model', y='buildtime', hue='Backend',
+                data=build, ax=ax, order=model_order)
+    plt.ylabel("Build time (s)")
+    plt.xlabel("")
+    save("fig5", fig=True)
+    svg2other("fig5")
 
     run = get_all_data("runtime",
-                       {'separate_cols': False, 'probes': probes},
+                       {'separate_cols': False},
                        scale_to_realtime=True)
 
     setup(figsize=(onecolumn * 2, 3.0))
@@ -229,7 +227,7 @@ def speed(probes=True):
     pp.set_visible(False)
     sns.despine(bottom=True, ax=inset)
 
-    fname = "fig6" if probes else "fig7"
+    fname = "fig6"
     save(fname, fig=True)
     svg2other(fname)
 
