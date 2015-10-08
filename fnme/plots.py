@@ -20,8 +20,11 @@ inkscape = "inkscape"
 # inkscape = os.path.expanduser("~/Applications/Inkscape.app/Contents"
 #                               "/Resources/bin/inkscape")
 
-onecolumn = 3.34646  # inches
-twocolumn = 7.08661  # inches
+# All in inches
+# onecolumn = 3.34646  # from initial submission
+onecolumn = 4.685044  # after author proof
+twocolumn = 7.08661  # never used
+horizontal = True
 
 
 class RectElement(sg.FigureElement):
@@ -124,32 +127,35 @@ def get_data(task, key, separate_cols=True):
         return pd.DataFrame(data, columns=['Backend', key])
 
 
-def plot_summary(task, key, figsize=None, rotation=0):
+def plot_summary(task, key, figsize=None):
     setup(figsize=figsize)
     data = get_data(task, key)
     sns.boxplot(data=data)
+    rotation = 15 if horizontal else 0
     plt.gca().set_xticklabels(data.columns, rotation=rotation)
 
 
 def accuracy():
-    plot_summary("cchannelchain", "rmse", figsize=(onecolumn * 2, 4.0))
+    figsize = (onecolumn, 4.0) if horizontal else (onecolumn * 2, 4.0)
+    plot_summary("cchannelchain", "rmse", figsize=figsize)
     plt.ylabel("RMSE")
     save("accuracy-1")
 
-    plot_summary("product", "rmse", figsize=(onecolumn * 2, 4.0))
+    plot_summary("product", "rmse", figsize=figsize)
     plt.ylabel("RMSE")
     save("accuracy-2")
 
-    plot_summary("controlledoscillator", "score", figsize=(onecolumn * 2, 4.0))
+    plot_summary("controlledoscillator", "score", figsize=figsize)
     plt.ylabel("FFT similarity")
     save("accuracy-3")
 
-    plot_summary("sequence", "timing_mean", figsize=(onecolumn * 2, 3.0))
+    figsize = (onecolumn, 4.0) if horizontal else (onecolumn * 2, 3.0)
+    plot_summary("sequence", "timing_mean", figsize=figsize)
     plt.ylabel("Mean transition time (s)")
     plt.ylim(0.04, 0.06)
     save("accuracy-4")
 
-    plot_summary("sequence_pruned", "timing_mean", figsize=(onecolumn * 2, 3.0))
+    plot_summary("sequence_pruned", "timing_mean", figsize=figsize)
     plt.ylabel("Mean transition time (s)")
     plt.ylim(0.04, 0.06)
     save("accuracy-4-pruned")
@@ -185,7 +191,8 @@ def speed():
     build = get_all_data("buildtime",
                          {'separate_cols': False})
 
-    setup(figsize=(onecolumn * 2, 3.0))
+    figsize = (onecolumn * 2, 3.0)
+    setup(figsize=figsize)
     ax = plt.subplot(1, 1, 1)
     sns.barplot(x='Model', y='buildtime', hue='Backend',
                 data=build, ax=ax, order=model_order)
@@ -198,7 +205,7 @@ def speed():
                        {'separate_cols': False},
                        scale_to_realtime=True)
 
-    setup(figsize=(onecolumn * 2, 3.0))
+    setup(figsize=figsize)
     ax = plt.subplot(1, 1, 1)
     sns.barplot(x='Model', y='runtime', hue='Backend',
                 data=run, ax=ax, order=model_order)
@@ -233,42 +240,64 @@ def speed():
 
 
 def fig1():
-    w = onecolumn * 2 * 72
+    w = (onecolumn * 72) if horizontal else (onecolumn * 2 * 72)
     h = 3.9 * 72
 
-    fig = svgfig(w, h * 2)
-    fig.append(el("A", 'plots/results-1.svg', 0, 0))
-    fig.append(el("B", 'plots/accuracy-1.svg', 0, h))
+    if horizontal:
+        fig = svgfig(w * 2, h)
+        fig.append(el("A", 'plots/results-1.svg', 0, 0))
+        fig.append(el("B", 'plots/accuracy-1.svg', w, 0))
+    else:
+        fig = svgfig(w, h * 2)
+        fig.append(el("A", 'plots/results-1.svg', 0, 0))
+        fig.append(el("B", 'plots/accuracy-1.svg', 0, h))
     savefig(fig, 'fig1')
 
 
 def fig2():
-    w = onecolumn * 2 * 72
+    w = (onecolumn * 72) if horizontal else (onecolumn * 2 * 72)
     h = 3.9 * 72
 
-    fig = svgfig(w, h * 2)
-    fig.append(el("A", 'plots/results-2.svg', 0, 0))
-    fig.append(el("B", None, 0, h * 0.42))
-    fig.append(el("C", 'plots/accuracy-2.svg', 0, h))
+    if horizontal:
+        fig = svgfig(w * 2, h)
+        fig.append(el("A", 'plots/results-2.svg', 0, 0))
+        fig.append(el("B", None, 0, h * 0.42))
+        fig.append(el("C", 'plots/accuracy-2.svg', w, 0))
+    else:
+        fig = svgfig(w, h * 2)
+        fig.append(el("A", 'plots/results-2.svg', 0, 0))
+        fig.append(el("B", None, 0, h * 0.42))
+        fig.append(el("C", 'plots/accuracy-2.svg', 0, h))
     savefig(fig, 'fig2')
 
 
 def fig3():
-    w = onecolumn * 2 * 72
+    w = (onecolumn * 72) if horizontal else (onecolumn * 2 * 72)
     h = 3.9 * 72
 
-    fig = svgfig(w, h * 2)
-    fig.append(el("A", 'plots/results-3.svg', 0, 0))
-    fig.append(el("B", 'plots/accuracy-3.svg', 0, h))
+    if horizontal:
+        fig = svgfig(w * 2, h)
+        fig.append(el("A", 'plots/results-3.svg', 0, 0))
+        fig.append(el("B", 'plots/accuracy-3.svg', w, 0))
+    else:
+        fig = svgfig(w, h * 2)
+        fig.append(el("A", 'plots/results-3.svg', 0, 0))
+        fig.append(el("B", 'plots/accuracy-3.svg', 0, h))
     savefig(fig, 'fig3')
 
 
 def fig4():
-    w = onecolumn * 2 * 72
-    h = 2.9 * 72
+    w = (onecolumn * 72) if horizontal else (onecolumn * 2 * 72)
+    h = 3.9 * 72 if horizontal else 2.9 * 72
 
-    fig = svgfig(w, h * 3)
-    fig.append(el("A", 'plots/results-4.svg', 0, 0))
-    fig.append(el("B", 'plots/accuracy-4.svg', 0, h))
-    fig.append(el("C", 'plots/accuracy-4-pruned.svg', 0, h * 2))
+    if horizontal:
+        fig = svgfig(w * 3, h)
+        fig.append(el("A", 'plots/results-4.svg', 0, 0))
+        fig.append(el("B", 'plots/accuracy-4.svg', w, 0))
+        fig.append(el("C", 'plots/accuracy-4-pruned.svg', w * 2, 0))
+    else:
+        fig = svgfig(w, h * 3)
+        fig.append(el("A", 'plots/results-4.svg', 0, 0))
+        fig.append(el("B", 'plots/accuracy-4.svg', 0, h))
+        fig.append(el("C", 'plots/accuracy-4-pruned.svg', 0, h * 2))
     savefig(fig, 'fig4')

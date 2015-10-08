@@ -25,7 +25,7 @@ try:
 except ImportError:
     pass
 
-from .plots import setup, onecolumn
+from .plots import setup, onecolumn, horizontal
 from .utils import HilbertCurve
 
 colors = sns.color_palette("cubehelix", n_colors=6)
@@ -58,7 +58,8 @@ def test_cchannelchain(Simulator, plt, rng, seed, outfile):
     sim.run(0.5)
 
     if type(plt).__name__ != 'Mock':
-        setup(figsize=(onecolumn * 2, 4.0))
+        figsize = (onecolumn, 4.0) if horizontal else (onecolumn * 2, 4.0)
+        setup(figsize=figsize)
         colors = sns.cubehelix_palette(5)
         lines = []
         for i, p_output in enumerate(p_outputs):
@@ -123,7 +124,8 @@ def test_product(Simulator, plt, seed, outfile):
     actual = sim.data[probe_test][after_wait]
     target = sim.data[probe_direct][after_wait]
 
-    setup(figsize=(onecolumn * 2, 4.0))
+    figsize = (onecolumn, 4.0) if horizontal else (onecolumn * 2, 4.0)
+    setup(figsize=figsize)
     plt.subplot(2, 1, 1)
     y = sim.data[probe_inp][after_wait]
     plt.plot(sim.trange()[after_wait], y[:, 0], c=colors[2])
@@ -227,7 +229,8 @@ def test_controlledoscillator(Simulator, plt, rng, seed, outfile):
     outfile.write('"simtime": %f,\n' % (len(stims) * T))
     outfile.write('"score": %f,\n' % np.mean(score))
 
-    setup(figsize=(onecolumn * 2, 4.0))
+    figsize = (onecolumn, 4.0) if horizontal else (onecolumn * 2, 4.0)
+    setup(figsize=figsize)
     lines = []
     if type(plt).__name__ != 'Mock':
         for i, y in enumerate(np.fft.fftshift(fft, axes=1)):
@@ -360,7 +363,8 @@ def _test_sequence(Simulator, plt, seed, outfile, prune_passthrough):
     outfile.write('"timing_mean": %f,\n' % mean)
     outfile.write('"timing_std": %f,\n' % std)
 
-    setup(figsize=(onecolumn * 2, 3.0), palette_args={
+    figsize = (onecolumn, 4.0) if horizontal else (onecolumn * 2, 3.0)
+    setup(figsize=figsize, palette_args={
         'palette': "cubehelix", 'n_colors': 6})
     plt.plot(t[t < 1.0], dotp[t < 1.0])
     for transition in t[indexes[0]]:
