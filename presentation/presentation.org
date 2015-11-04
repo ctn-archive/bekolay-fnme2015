@@ -43,7 +43,6 @@
   - =nengo_ocl=
   - =nengo_mpi=
   - =nengo_distilled=
-  - =nengo_brainstorms=
   - =nengo_spinnaker=
 * Testing Nengo
 #+REVEAL_HTML: <img src="/img/travis-ci.png" width="70%">

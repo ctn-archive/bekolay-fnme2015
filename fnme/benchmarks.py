@@ -1,8 +1,5 @@
 """A set of accuracy benchmarks.
 
-These mostly come from a set of benchmarks implemented for the
-nengo_brainstorms backend, adapted to be run using Nengo test suite.
-
 Contributors:
   - Terry Stewart (CNRG lab)
   - Trevor Bekolay (CNRG lab)

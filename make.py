@@ -51,7 +51,7 @@ def task_paper():
     def forsurecompile(fname, bibtex=True):
         pdf = CmdAction('pdflatex -interaction=nonstopmode %s.tex' % fname,
                         cwd=d)
-        bib = CmdAction('bibtex %s' % fname, cwd=d)
+        bib = CmdAction('bibtex paper', cwd=d)
         pdf_file = os.path.join(d, '%s.pdf' % fname)
         tex_file = os.path.join(d, '%s.tex' % fname)
         bib_file = os.path.join(d, '%s.bib' % fname)
@@ -60,6 +60,7 @@ def task_paper():
                 'actions': [pdf, bib, pdf, pdf] if bibtex else [pdf, pdf],
                 'targets': [pdf_file]}
     yield forsurecompile('paper')
+    yield forsurecompile('changes', bibtex=False)
 
 
 def task_compliance():
@@ -76,8 +77,6 @@ def task_compliance():
                     os.path.join(os.pardir, 'nengo_ocl'))
     yield run_tests('nengo_distilled', 'nengo_distilled/tests/test_nengo.py',
                     os.path.join(os.pardir, 'nengo_distilled'))
-    yield run_tests('nengo_brainstorm', 'nengo_brainstorm/tests/test_nengo.py',
-                    os.path.join(os.pardir, 'nef-chip-hardware'))
 
 
 def task_benchmarks():
@@ -85,7 +84,6 @@ def task_benchmarks():
     sims = [sim for sim in ('nengo',
                             'nengo_ocl',
                             'nengo_distilled',
-                            'nengo_brainstorm',
                             'nengo_spinnaker')
             if pkgutil.find_loader(sim)]
 

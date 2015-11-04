@@ -72,8 +72,8 @@ have therefore reworded the paragraph; it now reads:
 
   While passthrough nodes were removed in the basal ganglia sequence
   model for improved accuracy, it is interesting to note that speed is
-  also impacted in this version of the model.  While the distilled and
-  Brainstorm backends are unaffected, both the SpiNNaker and OpenCL
+  also impacted in this version of the model.  While the distilled
+  backend is unaffected, both the SpiNNaker and OpenCL
   backends run faster when passthrough nodes are removed.  This result
   indicates that passthrough nodes contribute to SpiNNaker's overhead.
   The reference backend, on the other hand, runs slower, indicating
@@ -197,14 +197,14 @@ has been updated. It now reads:
   types implemented. Since there are 31 parameterized tests, the
   maximum compliance is 31 times the number of neuron types
   implemented.  The reference backend implements three additional
-  neuron types, while OpenCL, Distilled, and Brainstorm implement one
+  neuron types, while OpenCL, and Distilled, implement one
   additional neuron type, and SpiNNaker only implements LIF neurons.
 
 Additionally, a paragraph explaining common failure cases
 is included in the main text in lines 309-319. It reads:
 
   It should be noted that these test suites are being run on the
-  distilled, Brainstorm, and SpiNNaker backends for the first time in
+  distilled and SpiNNaker backends for the first time in
   this study.  In other words, these results are the first objective
   interrogation of each backend's feature set.  In many cases, tests
   failed by backends are tests of features recently added to Nengo,
@@ -242,9 +242,7 @@ is included in the main text in lines 309-319. It reads:
 > could perhaps be implemented as an optional query on the backend;
 > the power consumption of most CPUs and GPUs can be publicly
 > referenced and approximated, or the implementation could provide its
-> own statistics for specialized hardware. Perhaps the Brainstorm
-> backend’s main advantage is in power efficiency, and there should be
-> resulting statistics that can show that. Regardless of
+> own statistics for specialized hardware. Regardless of
 > implementation, the authors should at least mention that efficiency
 > could be evaluated in future work.
 
@@ -512,8 +510,8 @@ Thank you, this has been corrected.
 > if the accuracy results themselves are not the main focus of the
 > article, some more explanations for the results should be given. In
 > particular, in Figs. 1 and 2, why does the Nengo reference backend
-> show a significantly higher variability than the Brainstorm and
-> distilled backends? In Figs. 3 and 4, where do the deviations in the
+> show a significantly higher variability than the
+> distilled backend? In Figs. 3 and 4, where do the deviations in the
 > SpiNNaker backend come from (my first guess would be the employed
 > 1ms time step, which is larger than the 0.1ms typically used in
 > software simulators)?
@@ -523,7 +521,7 @@ These additional details are listed below.
 
 Unfortunately, we do not have a satisfying explanation
 for why the reference backend shows higher variability than
-the Brainstorm and distilled backends.
+the distilled backend.
 We discuss this briefly in the additional details below
 and have added a sentence to the discussion
 indicating that we will examine this result in the future
@@ -540,7 +538,7 @@ as all of the backends tested use a 1 ms time step.
 
 Figure 1:
 
-  The Brainstorm and distilled backends have the least variability and
+  The distilled backend has the least variability and
   the SpiNNaker backend has the most variability, though the median
   RSME is the same across all backends.  One driver of these
   differences is in how each backend handles ensembles operating near
@@ -563,7 +561,7 @@ Figure 2:
   representational range is responsible for the SpiNNaker backend's
   reduced accuracy, though we have not investigated this in detail.
   This benchmark also suggests that the reference and OpenCL backends
-  have more variability than the Brainstorm and distilled backends.
+  have more variability than the distilled backend.
 
 Figure 3:
 

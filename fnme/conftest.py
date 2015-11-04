@@ -7,7 +7,7 @@ import pytest
 
 import nengo
 from nengo.tests.conftest import *
-from nengo.utils.testing import Timer
+from nengo.utils.stdlib import Timer
 
 
 if nengo.__version__ == '2.0.1':

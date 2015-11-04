@@ -1,4 +1,7 @@
 \documentclass{frontiersSCNS}
+%DIF LATEXDIFF DIFFERENCE FILE
+%DIF DEL oldpaper.tex   Wed Nov  4 17:49:42 2015
+%DIF ADD paper.tex      Wed Nov  4 17:49:17 2015
 
 \usepackage{url,lineno}
 \linenumbers
@@ -24,6 +27,25 @@
   200 University Avenue West,
   Waterloo, ON  N2L~3G1, Canada}
 \def\corrEmail{tbekolay@uwaterloo.ca}
+%DIF PREAMBLE EXTENSION ADDED BY LATEXDIFF
+%DIF UNDERLINE PREAMBLE %DIF PREAMBLE
+\RequirePackage[normalem]{ulem} %DIF PREAMBLE
+\RequirePackage{color}\definecolor{RED}{rgb}{1,0,0}\definecolor{BLUE}{rgb}{0,0,1} %DIF PREAMBLE
+\providecommand{\DIFadd}[1]{{\protect\color{blue}\uwave{#1}}} %DIF PREAMBLE
+\providecommand{\DIFdel}[1]{{\protect\color{red}\sout{#1}}}                      %DIF PREAMBLE
+%DIF SAFE PREAMBLE %DIF PREAMBLE
+\providecommand{\DIFaddbegin}{} %DIF PREAMBLE
+\providecommand{\DIFaddend}{} %DIF PREAMBLE
+\providecommand{\DIFdelbegin}{} %DIF PREAMBLE
+\providecommand{\DIFdelend}{} %DIF PREAMBLE
+%DIF FLOATSAFE PREAMBLE %DIF PREAMBLE
+\providecommand{\DIFaddFL}[1]{\DIFadd{#1}} %DIF PREAMBLE
+\providecommand{\DIFdelFL}[1]{\DIFdel{#1}} %DIF PREAMBLE
+\providecommand{\DIFaddbeginFL}{} %DIF PREAMBLE
+\providecommand{\DIFaddendFL}{} %DIF PREAMBLE
+\providecommand{\DIFdelbeginFL}{} %DIF PREAMBLE
+\providecommand{\DIFdelendFL}{} %DIF PREAMBLE
+%DIF END PREAMBLE EXTENSION ADDED BY LATEXDIFF
 
 \begin{document}
 \onecolumn
@@ -56,7 +78,7 @@
   in an efficient, unbiased, and future-proof manner.
   We implement four benchmark models and show that
   Nengo can collect metrics
-  across four different backends
+  across \DIFdelbegin \DIFdel{five }\DIFdelend \DIFaddbegin \DIFadd{four }\DIFaddend different backends
   that identify situations in which
   some backends perform more
   accurately or quickly.
@@ -182,8 +204,8 @@ rather than becoming obsolete in the future.
 
 Several Nengo backends exist or are in active development.
 In this paper, we run benchmarks
-on four backends.
-The reference and distilled backends
+on five backends.
+The reference \DIFdelbegin \DIFdel{, distilled, and Brainstorm }\DIFdelend \DIFaddbegin \DIFadd{and distilled }\DIFaddend backends
 run on general purpose computers,
 and focus on aspects other than speed.
 The OpenCL backend aims to be a fast backend
@@ -803,7 +825,7 @@ and could be adapted into benchmarks.
 \subsection{Backends tested}
 
 We collected the three benchmark metrics
-on four Nengo backends.
+on \DIFdelbegin \DIFdel{five }\DIFdelend \DIFaddbegin \DIFadd{four }\DIFaddend Nengo backends.
 
 \subsubsection{Reference (\texttt{nengo}).}
 
@@ -844,12 +866,44 @@ using fast general purpose computing devices
 like GPUs and any optimizations available,
 at the cost of code readability.
 
-\subsubsection{SpiNNaker hardware (\texttt{nengo\_spinnaker}).}
+\DIFdelbegin \subsubsection{\DIFdel{Brainstorm software (}\texttt{\DIFdel{nengo}%DIFDELCMD < \_brainstorm%%%
+}%DIFAUXCMD
+\DIFdel{).}}
+%DIFAUXCMD
+\addtocounter{subsubsection}{-1}%DIFAUXCMD
+%DIFDELCMD < 
+
+%DIFDELCMD < %%%
+\DIFdel{The Brainstorm backend is a software implementation
+of a new neuromorphic chip
+based partly on Neurogrid \mbox{%DIFAUXCMD
+\citep{benjamin2014}
+}%DIFAUXCMD
+currently in development
+by the Brains in Silicon lab
+at Stanford University.}\footnote{\DIFdel{
+  Some details available at }%DIFDELCMD < \url{http://brainstorm.stanford.edu/projects/}%%%
+\DIFdel{.}}
+%DIFAUXCMD
+\addtocounter{footnote}{-1}%DIFAUXCMD
+\DIFdel{The software backend does not aim for speed;
+instead, it attempts to emulate the proposed hardware
+in order to test its applicability
+for large-scale neural models.
+If the emulated hardware can perform well,
+then it follows that actual hardware
+will also perform well,
+but will be much faster.
+}%DIFDELCMD < 
+
+%DIFDELCMD < %%%
+\DIFdelend \subsubsection{SpiNNaker hardware (\texttt{nengo\_spinnaker}).}
 
 The SpiNNaker backend \citep{mundy2015}
 targets the eponymous neuromorphic hardware
 developed by \citet{furber2014}.
-This backend targets physical neuromorphic hardware,
+\DIFdelbegin \DIFdel{In contrast to the Brainstorm backend,
+this }\DIFdelend \DIFaddbegin \DIFadd{This }\DIFaddend backend targets physical neuromorphic hardware,
 and therefore is concerned
 both with accuracy and speed.
 
@@ -915,12 +969,19 @@ the OpenCL backend has the highest compliance.
 The distilled backend has lower compliance
 than OpenCL, which follows from its stated goal
 of being simple but not necessarily feature-rich.
-Finally, the SpiNNaker backend
+\DIFdelbegin \DIFdel{The Brainstorm backend fails one more test
+than the distilled background;
+however, it is still an early experimental test bed,
+and is not necessarily indicative of the
+final Brainstorm hardware backend being
+less compliant than other backends.
+}\DIFdelend Finally, the SpiNNaker backend
 passes the fewest tests.
 
 It should be noted that these test suites
 are being run on the distilled
-and SpiNNaker backends for the first time in this study.
+\DIFdelbegin \DIFdel{, Brainstorm,
+}\DIFdelend and SpiNNaker backends for the first time in this study.
 In other words, these results are the first objective
 interrogation of each backend's feature set.
 In many cases, tests failed by backends
@@ -952,12 +1013,13 @@ if they do not affect simulation accuracy.
 
 Figure~\ref{fig:01} gives accuracy results
 for each backend on the chained communication channel model.
-The boxplot shows that all four backends can
+The boxplot shows that all \DIFdelbegin \DIFdel{five }\DIFdelend \DIFaddbegin \DIFadd{four }\DIFaddend backends can
 implement this model accurately,
 despite five layers of processing
 that each introduce noise.
-The distilled backend
-has the least variability
+The \DIFdelbegin \DIFdel{Brainstorm and distilled backends
+have }\DIFdelend \DIFaddbegin \DIFadd{distilled backend
+has }\DIFaddend the least variability
 and the SpiNNaker backend has the most variability,
 though the median RSME is the same across all backends.
 One driver of these differences
@@ -999,14 +1061,14 @@ reduced accuracy,
 though we have not investigated this in detail.
 This benchmark also suggests that
 the reference and OpenCL backends
-have more variability than the distilled backend.
+have more variability than the \DIFdelbegin \DIFdel{Brainstorm and distilled backends}\DIFdelend \DIFaddbegin \DIFadd{distilled backend}\DIFaddend .
 
 Figure~\ref{fig:03} gives accuracy results
 for the controlled oscillator model.
 The reference and OpenCL backends perform well here,
-as does the distilled backend.
+as \DIFdelbegin \DIFdel{do the distilled and Brainstorm backends}\DIFdelend \DIFaddbegin \DIFadd{does the distilled backend}\DIFaddend .
 The median accuracy of the SpiNNaker is
-the same as the distilled backend,
+the same as the distilled \DIFdelbegin \DIFdel{and Brainstorm backends}\DIFdelend \DIFaddbegin \DIFadd{backend}\DIFaddend ,
 but model instances with less accuracy than the median
 perform poorly compared to other backends.
 In this example, differences in how each backend
@@ -1061,8 +1123,10 @@ has consistently fast builds.
 The OpenCL backend is also usually fast,
 but can be slow for certain types of networks
 (e.g., the chained communication channel model).
-The distilled backend becomes
-slow when dealing with moderately sized models
+The distilled \DIFdelbegin \DIFdel{and Brainstorm backends---which
+have a very similar build process---become
+}\DIFdelend \DIFaddbegin \DIFadd{backend becomes
+}\DIFaddend slow when dealing with moderately sized models
 (e.g., the basal ganglia sequence model,
 which contains 4900 neurons).
 The SpiNNaker backend incurs an unavoidable cost
@@ -1070,7 +1134,7 @@ in setting up the hardware
 (determining the placement of computational resources,
 and generating routes to connect resources),
 though it builds the largest model faster than
-the distilled backend.
+the distilled \DIFdelbegin \DIFdel{and Brainstorm backends}\DIFdelend \DIFaddbegin \DIFadd{backend}\DIFaddend .
 
 The run time results are of the utmost importance
 when evaluating backends for different applications,
@@ -1085,9 +1149,10 @@ is to run in real-time even if it is possible to run faster.
 
 The most important result is for the largest model,
 the basal ganglia sequence.
-In this model, the distilled backend
-performed poorly,
-though it does not have speed as a primary goal.
+In this model, the distilled \DIFdelbegin \DIFdel{and Brainstorm backends
+}\DIFdelend \DIFaddbegin \DIFadd{backend
+}\DIFaddend performed poorly,
+though \DIFdelbegin \DIFdel{neither has }\DIFdelend \DIFaddbegin \DIFadd{it does not have }\DIFaddend speed as a primary goal.
 The reference backend also did not perform well,
 operating at nearly six times slower than real-time.
 The OpenCL backend performed better, operating at around
@@ -1105,8 +1170,9 @@ in the basal ganglia sequence model
 for improved accuracy,
 it is interesting to note that speed
 is also impacted in this version of the model.
-While the distilled backend
-is unaffected,
+While the distilled \DIFdelbegin \DIFdel{and Brainstorm backends
+are }\DIFdelend \DIFaddbegin \DIFadd{backend
+is }\DIFaddend unaffected,
 both the SpiNNaker and OpenCL backends run faster
 when passthrough nodes are removed.
 This result indicates that passthrough nodes
@@ -1168,7 +1234,7 @@ in neuroscientific experiments.
 However, we expect that the results
 would be similar
 in larger models run for longer amounts of time.
-The distilled backend should
+The distilled \DIFdelbegin \DIFdel{and Brainstorm backends }\DIFdelend \DIFaddbegin \DIFadd{backend }\DIFaddend should
 perform slowly, the OpenCL backend should
 run faster than the reference backend,
 and SpiNNaker will continue to run at real-time.
@@ -1262,11 +1328,11 @@ In summary, we have implemented
 four benchmark models using the same
 testing framework used for Nengo's test suite,
 and gathered benchmark results
-for four backends,
+for \DIFdelbegin \DIFdel{five }\DIFdelend \DIFaddbegin \DIFadd{four }\DIFaddend backends,
 including an OpenCL backend that targets GPUs
 and a backend that targets
 SpiNNaker neuromorphic hardware.
-All four backends were able to implement
+All \DIFdelbegin \DIFdel{five }\DIFdelend \DIFaddbegin \DIFadd{four }\DIFaddend backends were able to implement
 the models accurately,
 with the OpenCL and SpiNNaker backends
 simulating the largest model much faster
@@ -1288,7 +1354,10 @@ efficiently and accurately.
 
 All of the software packages discussed in this paper
 are available online
-(see Table~\ref{Tab:01}).
+\DIFdelbegin \DIFdel{,
+except for the Brainstorm backend,
+which has not yet been publicly released
+}\DIFdelend (see Table~\ref{Tab:01}).
 All of the benchmarks presented here,
 as well as the scripts used to generate
 the presented figures,
@@ -1343,7 +1412,11 @@ Eric Hunsberger for help in running
 the benchmarks on the OpenCL backend,
 and James Bergstra for
 implementing most of the OpenCL backend.
-Finally, we thank our two reviewers for
+\DIFdelbegin \DIFdel{We thank the Brainstorm group
+at Stanford University for making
+their experimental hardware emulation backend
+available to us.
+}\DIFdelend Finally, we thank our two reviewers for
 their helpful feedback and recommendations.
 
 \paragraph{Funding\textcolon}
@@ -1426,14 +1499,19 @@ def test_compare_cchannelchain(analytics_data, plt):
  Nengo & \texttt{nengo} & Development version, commit \texttt{7d2d24145} \\
  Distilled backend & \texttt{nengo\_distilled} & 0.1.0 \\
  OpenCL backend & \texttt{nengo\_ocl} & 0.1.0 \\
- SpiNNaker backend & \texttt{nengo\_spinnaker} & 0.2.4 \\
+ \DIFdelbeginFL \DIFdelFL{Brainstorm backend }%DIFDELCMD < & %%%
+\DIFdelFL{Not available on PyPI }%DIFDELCMD < & %%%
+\DIFdelFL{Development version, commit }\texttt{\DIFdelFL{ac3cfa708}} %DIFAUXCMD
+%DIFDELCMD < \\
+%DIFDELCMD <  %%%
+\DIFdelendFL SpiNNaker backend & \texttt{nengo\_spinnaker} & 0.2.4 \\
  NumPy & \texttt{numpy} & 1.8.1 \\\botrule
 \end{tabular}}{}
 \end{table}
 
 \begin{table}[!ht]
 \textbf{\refstepcounter{table}\label{Tab:02} Table \arabic{table}.}{
-  Compliance of the four backends. Compliance is the number of functional
+  Compliance of the \DIFdelbeginFL \DIFdelFL{five }\DIFdelendFL \DIFaddbeginFL \DIFaddFL{four }\DIFaddendFL backends. Compliance is the number of functional
   tests passed by a particular backend. We have divided these tests into
   tests parameterized by neuron type, and those not parameterized.
   Non-parameterized tests are either designed to work with only
@@ -1444,7 +1522,7 @@ def test_compare_cchannelchain(analytics_data, plt):
   implemented. Since there are 31 parameterized tests, the maximum
   compliance is 31 times the number of neuron types implemented.
   The reference backend implements three additional neuron types,
-  while OpenCL and distilled implement one additional neuron type,
+  while OpenCL \DIFdelbeginFL \DIFdelFL{, Distilled, }\DIFdelendFL and \DIFdelbeginFL \DIFdelFL{Brainstorm }\DIFdelendFL \DIFaddbeginFL \DIFaddFL{distilled }\DIFaddendFL implement one additional neuron type,
   and SpiNNaker only implements LIF neurons.}
 
 \processtable{ }
@@ -1453,14 +1531,23 @@ def test_compare_cchannelchain(analytics_data, plt):
  Reference (\texttt{nengo}) & 165 (100\%) & 31 (100\%) & 93 \\
  OpenCL (\texttt{nengo\_ocl}) & 147 (89.0\%) & 29 (93.5\%) & 29 \\
  Distilled (\texttt{nengo\_distilled}) & 95 (57.6\%) & 15 (48.4\%) & 15 \\
- SpiNNaker (\texttt{nengo\_spinnaker}) & 88 (53.3\%) & 7 (22.6\%) & 0 \\\botrule
+ \DIFdelbeginFL \DIFdelFL{Brainstorm (}\texttt{\DIFdelFL{nengo}%DIFDELCMD < \_brainstorm%%%
+}%DIFAUXCMD
+\DIFdelFL{) }%DIFDELCMD < & %%%
+\DIFdelFL{94 (57.0\%) }%DIFDELCMD < & %%%
+\DIFdelFL{15 (48.4\%) }%DIFDELCMD < & %%%
+\DIFdelFL{15 }%DIFDELCMD < \\
+%DIFDELCMD <  %%%
+\DIFdelendFL SpiNNaker (\texttt{nengo\_spinnaker}) & 88 (53.3\%) & 7 (22.6\%) & 0 \\\botrule
 \end{tabular}}{}
 \end{table}
 
 \begin{figure}[!ht]
 \begin{center}
-  \includegraphics[width=178mm]{fig1}
-\end{center}
+  \DIFdelbeginFL %DIFDELCMD < \includegraphics[width=85mm]{fig1}
+%DIFDELCMD < %%%
+\DIFdelendFL \DIFaddbeginFL \includegraphics[width=178mm]{fig1}
+\DIFaddendFL \end{center}
 \textbf{\refstepcounter{figure}\label{fig:01} Figure \arabic{figure}.}
        {Chained communication channel model. (A) One example instance
          of the model run on the reference backend; the decoded output
@@ -1483,8 +1570,10 @@ def test_compare_cchannelchain(analytics_data, plt):
 
 \begin{figure}[!ht]
 \begin{center}
-  \includegraphics[width=178mm]{fig2}
-\end{center}
+  \DIFdelbeginFL %DIFDELCMD < \includegraphics[width=85mm]{fig2}
+%DIFDELCMD < %%%
+\DIFdelendFL \DIFaddbeginFL \includegraphics[width=178mm]{fig2}
+\DIFaddendFL \end{center}
 \textbf{\refstepcounter{figure}\label{fig:02} Figure \arabic{figure}.}
        {Two-dimensional product model. (A) One example instance of the model
          run on the reference backend; the decoded input represented
@@ -1509,8 +1598,10 @@ def test_compare_cchannelchain(analytics_data, plt):
 
 \begin{figure}[!ht]
 \begin{center}
-  \includegraphics[width=178mm]{fig3}
-\end{center}
+  \DIFdelbeginFL %DIFDELCMD < \includegraphics[width=85mm]{fig3}
+%DIFDELCMD < %%%
+\DIFdelendFL \DIFaddbeginFL \includegraphics[width=178mm]{fig3}
+\DIFaddendFL \end{center}
 \textbf{\refstepcounter{figure}\label{fig:03} Figure \arabic{figure}.}
        {Controlled two-dimensional oscillator model. (A) One example
          instance of the model run on the reference backend;
@@ -1534,8 +1625,10 @@ def test_compare_cchannelchain(analytics_data, plt):
 
 \begin{figure}[!ht]
 \begin{center}
-  \includegraphics[width=178mm]{fig4}
-\end{center}
+  \DIFdelbeginFL %DIFDELCMD < \includegraphics[width=85mm]{fig4}
+%DIFDELCMD < %%%
+\DIFdelendFL \DIFaddbeginFL \includegraphics[width=178mm]{fig4}
+\DIFaddendFL \end{center}
 \textbf{\refstepcounter{figure}\label{fig:04} Figure \arabic{figure}.}
        {Basal ganglia sequence model. (A) One example instance
          of the model run on the reference backend; the similarity between
@@ -1563,8 +1656,10 @@ def test_compare_cchannelchain(analytics_data, plt):
 
 \begin{figure}[!ht]
 \begin{center}
-  \includegraphics[width=178mm]{fig5}
-\end{center}
+  \DIFdelbeginFL %DIFDELCMD < \includegraphics[width=85mm]{fig5}
+%DIFDELCMD < %%%
+\DIFdelendFL \DIFaddbeginFL \includegraphics[width=178mm]{fig5}
+\DIFaddendFL \end{center}
 \textbf{\refstepcounter{figure}\label{fig:05} Figure \arabic{figure}.}
        {Build time for each model on each backend. Each bar represents
          the mean build time across 50 instances of each model;
@@ -1575,8 +1670,10 @@ def test_compare_cchannelchain(analytics_data, plt):
 
 \begin{figure}[!ht]
 \begin{center}
-  \includegraphics[width=178mm]{fig6}
-\end{center}
+  \DIFdelbeginFL %DIFDELCMD < \includegraphics[width=85mm]{fig6}
+%DIFDELCMD < %%%
+\DIFdelendFL \DIFaddbeginFL \includegraphics[width=178mm]{fig6}
+\DIFaddendFL \end{center}
 \textbf{\refstepcounter{figure}\label{fig:06} Figure \arabic{figure}.}
        {Run speed for each model on each backend. Each bar represents
          the mean run speed across 50 instances of each model;
