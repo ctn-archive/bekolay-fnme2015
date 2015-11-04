@@ -355,7 +355,7 @@ with 500~neurons and 6~connections
 (representing 50,000~connection weights
 and 100~direct current injection sites)
 in under 20~lines of code
-can be seen in Appendix~A.
+can be seen in the Appendix.
 
 It is important to note that,
 although the Nengo frontend
@@ -525,7 +525,7 @@ to be specified once,
 and run for any test that might use it.
 A demonstration of how these fixtures
 are used in test scripts
-can be seen in Appendix~A.
+can be seen in the Appendix.
 
 \subsubsection{Test fixtures}
 
@@ -584,7 +584,7 @@ test runs to a single test function,
 allowing for comparisons
 between the two results saved
 with the \texttt{analytics} fixture.
-See Appendix~A for a
+See the Appendix for a
 concrete example of using the
 \texttt{analytics\_data} fixture.
 
@@ -600,8 +600,9 @@ for neural simulators and neuromorphic hardware.
 \subsection{Metrics collected}
 \label{Sec:Metrics}
 
-\paragraph{Compliance}
-is the number of tests that a particular backend
+\subsubsection{Compliance}
+
+Compliance is the number of tests that a particular backend
 passes successfully, relative to the reference
 backend, which must pass all tests.
 While this metric can give an indication
@@ -612,8 +613,9 @@ for this reason, a backend that has relatively
 low compliance can still be useful
 in many situations.
 
-\paragraph{Accuracy}
-measures how well a particular backend
+\subsubsection{Accuracy}
+
+Accuracy measures how well a particular backend
 implements a desired model.
 The actual accuracy metric depends
 on the desired model,
@@ -623,8 +625,9 @@ between a desired signal
 and the actual signal decoded
 from an ensemble.
 
-\paragraph{Speed}
-measures the amount of time it takes
+\subsubsection{Speed}
+
+Speed measures the amount of time it takes
 for a backend to run a model.
 Primarily, we are concerned with
 the amount of time taken
@@ -666,14 +669,15 @@ of a wide variety of large-scale brain models
 Each test has several parameters
 that can be varied
 in order to benchmark a wide variety of cases
-(see Appendix~A for an example).
+(see the Appendix for an example).
 We test each model with parameters
 typically used in large-scale models,
 but make these parameterized models
 available at \url{https://github.com/ctn-archive/bekolay-fnme2015}
 for those who wish to explore additional cases.
 
-\paragraph{1. Communication channel chain.}
+\subsubsection{Communication channel chain.}
+
 In this model,
 five ensembles,
 comprised of 100 leaky integrate-and-fire (LIF) neurons each
@@ -691,7 +695,8 @@ robust each backend is to the noise introduced
 by representing a vector space
 in the activity of spiking neurons.
 
-\paragraph{2. Two-dimensional product.}
+\subsubsection{Two-dimensional product.}
+
 In this model,
 the scalar product is computed
 from a two-dimensional ensemble
@@ -711,7 +716,8 @@ it is the primary operation needed to support
 symbol-like processing using neuron-like elements,
 for example \citep{eliasmith2013}.
 
-\paragraph{3. Controlled oscillator.}
+\subsubsection{Controlled oscillator.}
+
 In this model,
 a three-dimensional ensemble is recurrently connected
 such that the first two dimensions continuously
@@ -740,7 +746,8 @@ to stably implement a dynamical system,
 which is required for many cognitive functions
 like working memory and motor control.
 
-\paragraph{4. Basal ganglia sequence.}
+\subsubsection{Basal ganglia sequence.}
+
 In this model, brain structures
 known collectively as the basal ganglia
 are constructed from 4900 LIF neurons,
@@ -798,7 +805,8 @@ and could be adapted into benchmarks.
 We collected the three benchmark metrics
 on five Nengo backends.
 
-\paragraph{1. Reference (\texttt{nengo}).}
+\subsubsection{Reference (\texttt{nengo}).}
+
 The reference backend is designed to run quickly
 on any general purpose computer
 by using NumPy \citep{vanderwalt2011}
@@ -809,7 +817,8 @@ The reference backend offers
 the most features, but does not target
 specialized hardware.
 
-\paragraph{2. Distilled (\texttt{nengo\_distilled}).}
+\subsubsection{Distilled (\texttt{nengo\_distilled}).}
+
 The distilled backend is intended as a teaching tool,
 and as a template for building new backends.
 It can also run on any general purpose computer,
@@ -821,7 +830,8 @@ Therefore, the distilled backend is easier to read
 and suitable for learning about Nengo,
 but is expected to be slower in terms of run time.
 
-\paragraph{3. OpenCL (\texttt{nengo\_ocl}).}
+\subsubsection{OpenCL (\texttt{nengo\_ocl}).}
+
 The OpenCL backend uses the Open Computing Language
 (OpenCL; \citealp{stone2010})
 to run Nengo models on many different computing devices,
@@ -834,7 +844,8 @@ using fast general purpose computing devices
 like GPUs and any optimizations available,
 at the cost of code readability.
 
-\paragraph{4. Brainstorm software (\texttt{nengo\_brainstorm}).}
+\subsubsection{Brainstorm software (\texttt{nengo\_brainstorm}).}
+
 The Brainstorm backend is a software implementation
 of a new neuromorphic chip
 based partly on Neurogrid \citep{benjamin2014}
@@ -851,7 +862,8 @@ then it follows that actual hardware
 will also perform well,
 but will be much faster.
 
-\paragraph{5. SpiNNaker hardware (\texttt{nengo\_spinnaker}).}
+\subsubsection{SpiNNaker hardware (\texttt{nengo\_spinnaker}).}
+
 The SpiNNaker backend \citep{mundy2015}
 targets the eponymous neuromorphic hardware
 developed by \citet{furber2014}.
@@ -1380,7 +1392,7 @@ Ontario Innovation Trust.
 
 \clearpage
 
-\section*{Appendix A: Chained Communication Channel model}
+\section*{Appendix: Chained Communication Channel model}
 
 \begin{lstlisting}
 import numpy as np
@@ -1605,7 +1617,7 @@ def test_compare_cchannelchain(analytics_data, plt):
          error bars are bootstrapped 95\% confidence intervals.
          Run speed is measured as the simulation time plus overhead,
          relative to real time; e.g., a value of two indicates that
-         the calling \texttt{run} for a number of seconds takes
+         calling \texttt{run} for a number of seconds takes
          the model two times that number of real seconds to complete the
          \texttt{run} call.
          BG Sequence * refers to the basal ganglia sequence model
