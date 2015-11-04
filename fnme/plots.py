@@ -24,7 +24,7 @@ inkscape = "inkscape"
 # onecolumn = 3.34646  # from initial submission
 onecolumn = 4.685044  # after author proof
 twocolumn = 7.08661  # never used
-horizontal = True
+horizontal = False
 
 
 class RectElement(sg.FigureElement):
